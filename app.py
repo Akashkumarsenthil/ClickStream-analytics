@@ -5,72 +5,53 @@ import plotly.graph_objects as go
 from datetime import datetime
 import json
 import time
-from collections import defaultdict
-import streamlit.components.v1 as components
-import firebase_admin
-from firebase_admin import credentials, firestore
+import boto3
 import os
 
 # Page config
 st.set_page_config(
-    page_title="🖱️ ClickStream Analytics - LIVE",
+    page_title="🖱️ ClickStream Analytics - LIVE S3",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 st.title("🖱️ ClickStream Analytics — Real-Time Dashboard")
-st.markdown("### 👀 Watch audience clicks appear in real-time!")
+st.markdown("### 👀 Watching `s3://clickstream-analytics-akash/live-events/` in real-time")
 
-# --- Firebase/Firestore or JSON-based real-time data store ---
-# For simplicity, we'll use Streamlit's session state + a shared JSON file
-# In production, use Firebase Realtime DB or Supabase for true real-time sync
+# --- S3 Configuration ---
+S3_BUCKET = "clickstream-analytics-akash"
+S3_LIVE_PREFIX = "live-events/"
 
 @st.cache_resource
-def init_firebase():
-    if not firebase_admin._apps:
-        # Check for environment variable
-        firebase_key = os.environ.get("FIREBASE_KEY")
-        if not firebase_key:
-            st.error("Missing FIREBASE_KEY environment variable. Please add it to your Streamlit secrets.")
-            st.stop()
-        
-        try:
-            cred_dict = json.loads(firebase_key)
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-        except Exception as e:
-            st.error(f"Error initializing Firebase: {e}")
-            st.stop()
-            
-    return firestore.client()
+def get_s3_client():
+    # Uses local credentials or env vars
+    return boto3.client('s3')
 
-try:
-    db = init_firebase()
-except Exception as e:
-    st.error(f"Could not connect to Firebase: {e}")
-    st.stop()
-
-# Real-time listener
 def get_live_clicks():
+    s3 = get_s3_client()
     try:
-        clicks_ref = db.collection("clickstream")
-        # Ordering by timestamp and limiting to 100
-        docs = clicks_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(100).stream()
+        # List files in the live-events prefix
+        response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=S3_LIVE_PREFIX)
+        if 'Contents' not in response:
+            return pd.DataFrame()
+            
+        # Sort by last modified to get newest first, limit to last 100 events
+        files = sorted(response['Contents'], key=lambda x: x['LastModified'], reverse=True)[:100]
+        
         data = []
-        for doc in docs:
-            d = doc.to_dict()
-            # Convert firestore timestamp to python datetime
-            if 'timestamp' in d and d['timestamp']:
-                try:
-                    # Some versions return datetime directly, others need conversion
-                    if hasattr(d['timestamp'], 'to_datetime'):
-                        d['timestamp'] = d['timestamp'].to_datetime()
-                except:
-                    pass
-            data.append(d)
-        return pd.DataFrame(data)
+        for f in files:
+            if not f['Key'].endswith('.json'):
+                continue
+            obj = s3.get_object(Bucket=S3_BUCKET, Key=f['Key'])
+            content = json.loads(obj['Body'].read().decode('utf-8'))
+            data.append(content)
+            
+        df = pd.DataFrame(data)
+        if not df.empty:
+             df['event_time'] = pd.to_datetime(df['event_time'])
+        return df
     except Exception as e:
-        st.warning(f"Error fetching data: {e}")
+        st.warning(f"Error fetching S3 data: {e}")
         return pd.DataFrame()
 
 # Auto-refresh loop
@@ -86,25 +67,18 @@ while True:
         if not df.empty:
             active_users = df['user_id'].nunique()
             total_clicks = len(df)
-            pages_visited = df['page'].nunique()
+            top_category = df['category_code'].mode()[0] if 'category_code' in df and not df['category_code'].isnull().all() else "N/A"
+            total_value = df['price'].sum() if 'price' in df else 0
             
-            # Calculate avg session time if possible
-            try:
-                # Group by user and calculate (max - min) time
-                session_times = df.groupby('user_id')['timestamp'].agg(['max', 'min'])
-                avg_session = (session_times['max'] - session_times['min']).dt.total_seconds().mean()
-            except:
-                avg_session = 0
-                
-            col1.metric("👥 Active Users", active_users)
-            col2.metric("🖱️ Total Clicks", total_clicks)
-            col3.metric("📄 Pages Visited", pages_visited)
-            col4.metric("⏱️ Avg Session (s)", round(avg_session, 1))
+            col1.metric("👥 Live Users", active_users)
+            col2.metric("🖱️ Live Clicks", total_clicks)
+            col3.metric("📂 Top Category", top_category)
+            col4.metric("💰 Live GMV ($)", f"{total_value:,.2f}")
         else:
-            col1.metric("👥 Active Users", 0)
-            col2.metric("🖱️ Total Clicks", 0)
-            col3.metric("📄 Pages Visited", 0)
-            col4.metric("⏱️ Avg Session (s)", 0)
+            col1.metric("👥 Live Users", 0)
+            col2.metric("🖱️ Live Clicks", 0)
+            col3.metric("📂 Top Category", "N/A")
+            col4.metric("💰 Live GMV ($)", "0.00")
         
         st.markdown("---")
         
@@ -112,63 +86,69 @@ while True:
         left_col, right_col = st.columns([2, 1])
         
         with left_col:
-            st.subheader("🔴 Live Click Stream")
+            st.subheader("🔴 Live Event Distribution")
             if not df.empty:
-                # Sunburst diagram of user flows
+                # Sunburst diagram of category -> brand -> event_type
                 try:
-                    flow_df = df.groupby(['page', 'action']).size().reset_index(name='count')
+                    # Clean up data for sunburst
+                    plot_df = df.copy()
+                    plot_df['category_code'] = plot_df['category_code'].fillna('unknown')
+                    plot_df['brand'] = plot_df['brand'].fillna('generic')
+                    
                     fig = px.sunburst(
-                        flow_df,
-                        path=['page', 'action'],
-                        values='count',
-                        color='count',
-                        color_continuous_scale='RdYlGn',
-                        template="plotly_dark"
+                        plot_df,
+                        path=['category_code', 'brand', 'event_type'],
+                        color='event_type',
+                        template="plotly_dark",
+                        color_discrete_map={'view':'#636EFA', 'cart':'#EF553B', 'purchase':'#00CC96'}
                     )
-                    fig.update_layout(height=400, margin=dict(t=0, l=0, r=0, b=0))
+                    fig.update_layout(height=450, margin=dict(t=0, l=0, r=0, b=0))
                     st.plotly_chart(fig, use_container_width=True)
                 except Exception as e:
-                    st.info("Waiting for more data to generate flow chart...")
+                    st.info("Generating live visualization...")
             else:
-                st.info("No data yet. Clicks will appear here as they happen!")
+                st.info("Waiting for live events from GitHub Pages...")
         
         with right_col:
-            st.subheader("📋 Recent Clicks")
+            st.subheader("📋 Recent Events")
             if not df.empty:
                 # Display clean dataframe
-                display_df = df[['user_id', 'page', 'action', 'timestamp']].copy()
+                cols_to_show = ['user_id', 'event_type', 'brand', 'price', 'event_time']
+                display_df = df[[c for c in cols_to_show if c in df]].copy()
                 if not display_df.empty:
-                    # Format timestamp for display
-                    try:
-                        display_df['timestamp'] = pd.to_datetime(display_df['timestamp']).dt.strftime('%H:%M:%S')
-                    except:
-                        pass
+                    display_df['event_time'] = display_df['event_time'].dt.strftime('%H:%M:%S')
                     st.dataframe(
                         display_df.head(15),
                         use_container_width=True,
                         hide_index=True
                     )
             else:
-                st.write("Listening for incoming events...")
+                st.write("Listening for events at `s3://.../live-events/`...")
         
-        # Heatmap of clicks over time
-        st.subheader("🗺️ Click Heatmap by Page")
-        if not df.empty:
-            try:
-                # Simple heatmap of page vs time (minute)
-                df['minute'] = pd.to_datetime(df['timestamp']).dt.minute
-                heatmap_data = df.groupby(['page', 'minute']).size().unstack(fill_value=0)
-                if not heatmap_data.empty:
-                    fig2 = px.imshow(
-                        heatmap_data, 
-                        color_continuous_scale='Hot', 
-                        aspect='auto',
-                        labels=dict(x="Minute", y="Page", color="Clicks"),
-                        template="plotly_dark"
-                    )
-                    fig2.update_layout(height=300)
-                    st.plotly_chart(fig2, use_container_width=True)
-            except Exception as e:
-                pass
+        # Historical Comparison Mock (as suggested in your prompt)
+        st.subheader("📊 Historical Context (REES46 Baseline)")
+        h_col1, h_col2 = st.columns(2)
+        
+        with h_col1:
+            # Mock historical data vs live
+            historical_total = 942167 # example
+            live_total = len(df)
+            st.write(f"**Total Views (Samsung S20):**")
+            st.write(f"- Historical: {historical_total:,}")
+            st.write(f"- Live Demo: {live_total}")
+            st.progress(min(live_total / 100, 1.0)) # Progress bar for demo effect
+            
+        with h_col2:
+            if not df.empty and 'brand' in df:
+                brand_counts = df['brand'].value_counts().reset_index()
+                brand_counts.columns = ['brand', 'count']
+                fig3 = px.bar(
+                    brand_counts, x='brand', y='count', 
+                    title="Live Brand Interest",
+                    template="plotly_dark",
+                    color='brand'
+                )
+                fig3.update_layout(height=250)
+                st.plotly_chart(fig3, use_container_width=True)
     
     time.sleep(2)  # Refresh every 2 seconds

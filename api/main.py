@@ -15,10 +15,7 @@ Usage:
     uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 """
 
-import os
-import sys
-import json
-import time
+import boto3
 from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 
@@ -103,6 +100,19 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class LiveEvent(BaseModel):
+    """Schema for live clickstream events from GitHub Pages."""
+    event_time: str
+    event_type: str
+    product_id: str
+    category_code: Optional[str] = None
+    brand: Optional[str] = None
+    price: float
+    user_id: str
+    session_id: Optional[str] = None
+    source: str = "github_pages_demo"
+
+
 # ─── App State ───
 
 class AppState:
@@ -118,6 +128,9 @@ class AppState:
         self.user_segments = None
         self.trending_data = None
         self.product_stats = None
+        self.s3_client = boto3.client("s3")
+        self.s3_bucket = "clickstream-analytics-akash"
+        self.s3_prefix = "live-events/"
 
     @property
     def models_status(self) -> Dict[str, bool]:
@@ -276,6 +289,28 @@ async def health_check():
         uptime_seconds=round(time.time() - state.start_time, 1),
         version="1.0.0"
     )
+
+
+@app.post("/ingest")
+async def ingest_event(event: LiveEvent):
+    """Ingest a live event and store it in S3 as a JSON file."""
+    try:
+        event_dict = event.dict()
+        # Create a unique filename using user_id and timestamp
+        timestamp_ms = int(time.time() * 1000)
+        filename = f"{state.s3_prefix}event_{event.user_id}_{timestamp_ms}.json"
+        
+        state.s3_client.put_object(
+            Bucket=state.s3_bucket,
+            Key=filename,
+            Body=json.dumps(event_dict),
+            ContentType="application/json"
+        )
+        
+        return {"status": "success", "event_stored": filename}
+    except Exception as e:
+        print(f"[ERROR] S3 Ingestion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to store event: {str(e)}")
 
 
 @app.get("/recommend/{user_id}", response_model=RecommendationResponse)

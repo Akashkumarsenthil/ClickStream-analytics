@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 ClickStream Demo - Click Anywhere!</title>
+    <title>🎯 ClickStream Demo - Click to Generate Live S3 Events!</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -84,13 +84,19 @@
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
         }
         .card h2 {
-            margin-bottom: 12px;
-            font-size: 1.6em;
+            margin-bottom: 8px;
+            font-size: 1.4em;
             font-weight: 600;
         }
+        .card .price {
+            color: #00dbde;
+            font-weight: 700;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
         .card p {
-            opacity: 0.7;
-            font-size: 1em;
+            opacity: 0.6;
+            font-size: 0.9em;
         }
         .toast {
             position: fixed;
@@ -119,125 +125,107 @@
             font-weight: 500;
         }
         #counter {
-            color: #00dbde;
+            color: #fc00ff;
             font-weight: 700;
-        }
-        
-        @media (max-width: 600px) {
-            .header h1 { font-size: 2em; }
-            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="click-counter">Clicks: <span id="counter">0</span></div>
+    <div class="click-counter">Live S3 Events: <span id="counter">0</span></div>
     
     <div class="header">
-        <h1>🖱️ Click to Interact!</h1>
-        <p>Choose any category below. Your interaction is being visualized live on the main dashboard for this presentation.</p>
+        <h1>🖱️ Live Clickstream Simulation</h1>
+        <p>Click any product to emit a REES46-compatible event directly to S3. These events will overlay on top of the historical baseline in the dashboard.</p>
     </div>
     
     <div class="grid">
-        <div class="card" data-page="products" data-action="browse">
-            <span class="emoji">🛍️</span>
-            <h2>Products</h2>
-            <p>Explore our premium collection</p>
+        <div class="card" data-product-id="1004856" data-category="electronics.smartphone" data-brand="samsung" data-price="129.99">
+            <span class="emoji">📱</span>
+            <div class="price">$129.99</div>
+            <h2>Samsung S20</h2>
+            <p>electronics.smartphone</p>
         </div>
-        <div class="card" data-page="pricing" data-action="view">
-            <span class="emoji">💰</span>
-            <h2>Pricing</h2>
-            <p>Check our flexible plans</p>
+        <div class="card" data-product-id="1005115" data-category="electronics.smartphone" data-brand="apple" data-price="947.09">
+            <span class="emoji">🍏</span>
+            <div class="price">$947.09</div>
+            <h2>iPhone 12</h2>
+            <p>electronics.smartphone</p>
         </div>
-        <div class="card" data-page="about" data-action="learn">
-            <span class="emoji">ℹ️</span>
-            <h2>About Us</h2>
-            <p>Discover our mission & values</p>
+        <div class="card" data-product-id="4804056" data-category="electronics.audio.headphone" data-brand="apple" data-price="162.00">
+            <span class="emoji">🎧</span>
+            <div class="price">$162.00</div>
+            <h2>AirPods Pro</h2>
+            <p>electronics.audio.headphone</p>
         </div>
-        <div class="card" data-page="blog" data-action="read">
-            <span class="emoji">📝</span>
-            <h2>Blog</h2>
-            <p>Insights and tech updates</p>
+        <div class="card" data-product-id="1004767" data-category="electronics.smartphone" data-brand="samsung" data-price="247.06">
+            <span class="emoji">📱</span>
+            <div class="price">$247.06</div>
+            <h2>Samsung A51</h2>
+            <p>electronics.smartphone</p>
         </div>
-        <div class="card" data-page="contact" data-action="reach">
-            <span class="emoji">📧</span>
-            <h2>Contact</h2>
-            <p>Get in touch with the team</p>
+        <div class="card" data-product-id="1307073" data-category="computers.notebook" data-brand="hp" data-price="450.45">
+            <span class="emoji">💻</span>
+            <div class="price">$450.45</div>
+            <h2>HP Pavilion</h2>
+            <p>computers.notebook</p>
         </div>
-        <div class="card" data-page="signup" data-action="convert">
-            <span class="emoji">🚀</span>
-            <h2>Sign Up</h2>
-            <p>Start your journey today</p>
+        <div class="card" data-product-id="1002544" data-category="electronics.smartphone" data-brand="apple" data-price="460.51">
+            <span class="emoji">🍏</span>
+            <div class="price">$460.51</div>
+            <h2>iPhone 11</h2>
+            <p>electronics.smartphone</p>
         </div>
     </div>
 
-    <div class="toast" id="toast">✨ Event recorded!</div>
+    <div class="toast" id="toast">🚀 S3 Event Ingested!</div>
 
-    <!-- Firebase SDK (Compat mode for simplicity in single file) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
     <script>
-        // --- Firebase Configuration ---
-        // IMPORTANT: Replace the following placeholders with your actual Firebase project settings
-        const firebaseConfig = {
-            apiKey: "AIzaSyDvdAmPKCxx5CAol-gbgdjvgRo3bZDVOuU",
-            authDomain: "clickstream-demo-420de.firebaseapp.com",
-            projectId: "clickstream-demo-420de",
-            storageBucket: "clickstream-demo-420de.firebasestorage.app",
-            messagingSenderId: "3862154748",
-            appId: "1:3862154748:web:8c9d1a7febceee9b097679",
-            measurementId: "G-KJQQTMSNRP"
-        };
+        // --- Configuration ---
+        // REPLACE THIS with your EC2 API URL (e.g., http://54.123.45.67:8000/ingest)
+        const API_URL = "http://YOUR_EC2_IP:8000/ingest"; 
         
-        // Initialize Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-            
-            // Generate unique user ID for this browser session
-            const userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            let clickCount = 0;
-            
-            // Track clicks on all cards
-            document.querySelectorAll('.card').forEach(card => {
-                card.addEventListener('click', async (e) => {
-                    const page = card.dataset.page;
-                    const action = card.dataset.action;
+        // Generate unique user ID for this browser session
+        const userId = 'demo_user_' + Math.random().toString(36).substr(2, 5);
+        let eventCount = 0;
+        
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', async (e) => {
+                const event = {
+                    event_time: new Date().toISOString(),
+                    event_type: "view",
+                    product_id: card.dataset.productId,
+                    category_code: card.dataset.category,
+                    brand: card.dataset.brand,
+                    price: parseFloat(card.dataset.price),
+                    user_id: userId,
+                    session_id: "demo_sess_" + userId.split('_')[2],
+                    source: "github_pages_demo"
+                };
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(event)
+                    });
                     
-                    try {
-                        // Send to Firebase
-                        await db.collection('clickstream').add({
-                            user_id: userId,
-                            page: page,
-                            action: action,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                            device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-                        });
-                        
-                        // Update UI
-                        clickCount++;
-                        document.getElementById('counter').textContent = clickCount;
+                    if (response.ok) {
+                        eventCount++;
+                        document.getElementById('counter').textContent = eventCount;
                         
                         // Success Toast
                         const toast = document.getElementById('toast');
                         toast.style.display = 'block';
-                        toast.style.animation = 'none';
-                        toast.offsetHeight; // trigger reflow
-                        toast.style.animation = null; 
-                        
-                        setTimeout(() => {
-                            toast.style.display = 'none';
-                        }, 2000);
-                        
-                    } catch (err) {
-                        console.error("Error sending to Firebase:", err);
+                        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+                    } else {
+                        console.error("API Error:", await response.text());
                     }
-                });
+                } catch (err) {
+                    console.error("Connection Error:", err);
+                    alert("Could not connect to API! Make sure your FastAPI server is running on EC2.");
+                }
             });
-        } catch (err) {
-            console.error("Firebase Initialization Error:", err);
-            alert("Firebase not configured! Please edit the HTML file with your credentials.");
-        }
+        });
     </script>
 </body>
 </html>
