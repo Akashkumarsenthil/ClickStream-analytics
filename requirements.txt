@@ -31,3 +31,6 @@ pytest-cov==5.0.0
 # Jupyter (optional, for notebooks)
 jupyter>=1.0
 ipykernel>=6.0
+
+# Demo
+firebase-admin==6.5.0

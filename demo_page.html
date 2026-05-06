@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 ClickStream Demo - Click Anywhere!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+        .header {
+            text-align: center;
+            padding: 50px 20px;
+            max-width: 800px;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px;
+            max-width: 1100px;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+        .card:hover::before {
+            left: 100%;
+        }
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .card:active {
+            transform: scale(0.95);
+        }
+        .emoji {
+            font-size: 4em;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+        }
+        .card h2 {
+            margin-bottom: 12px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+        .card p {
+            opacity: 0.7;
+            font-size: 1em;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-weight: 600;
+        }
+        .click-counter {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-weight: 500;
+        }
+        #counter {
+            color: #00dbde;
+            font-weight: 700;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 { font-size: 2em; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="click-counter">Clicks: <span id="counter">0</span></div>
+    
+    <div class="header">
+        <h1>🖱️ Click to Interact!</h1>
+        <p>Choose any category below. Your interaction is being visualized live on the main dashboard for this presentation.</p>
+    </div>
+    
+    <div class="grid">
+        <div class="card" data-page="products" data-action="browse">
+            <span class="emoji">🛍️</span>
+            <h2>Products</h2>
+            <p>Explore our premium collection</p>
+        </div>
+        <div class="card" data-page="pricing" data-action="view">
+            <span class="emoji">💰</span>
+            <h2>Pricing</h2>
+            <p>Check our flexible plans</p>
+        </div>
+        <div class="card" data-page="about" data-action="learn">
+            <span class="emoji">ℹ️</span>
+            <h2>About Us</h2>
+            <p>Discover our mission & values</p>
+        </div>
+        <div class="card" data-page="blog" data-action="read">
+            <span class="emoji">📝</span>
+            <h2>Blog</h2>
+            <p>Insights and tech updates</p>
+        </div>
+        <div class="card" data-page="contact" data-action="reach">
+            <span class="emoji">📧</span>
+            <h2>Contact</h2>
+            <p>Get in touch with the team</p>
+        </div>
+        <div class="card" data-page="signup" data-action="convert">
+            <span class="emoji">🚀</span>
+            <h2>Sign Up</h2>
+            <p>Start your journey today</p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✨ Event recorded!</div>
+
+    <!-- Firebase SDK (Compat mode for simplicity in single file) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // --- Firebase Configuration ---
+        // IMPORTANT: Replace the following placeholders with your actual Firebase project settings
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            
+            // Generate unique user ID for this browser session
+            const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            let clickCount = 0;
+            
+            // Track clicks on all cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', async (e) => {
+                    const page = card.dataset.page;
+                    const action = card.dataset.action;
+                    
+                    try {
+                        // Send to Firebase
+                        await db.collection('clickstream').add({
+                            user_id: userId,
+                            page: page,
+                            action: action,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+                        });
+                        
+                        // Update UI
+                        clickCount++;
+                        document.getElementById('counter').textContent = clickCount;
+                        
+                        // Success Toast
+                        const toast = document.getElementById('toast');
+                        toast.style.display = 'block';
+                        toast.style.animation = 'none';
+                        toast.offsetHeight; // trigger reflow
+                        toast.style.animation = null; 
+                        
+                        setTimeout(() => {
+                            toast.style.display = 'none';
+                        }, 2000);
+                        
+                    } catch (err) {
+                        console.error("Error sending to Firebase:", err);
+                    }
+                });
+            });
+        } catch (err) {
+            console.error("Firebase Initialization Error:", err);
+            alert("Firebase not configured! Please edit the HTML file with your credentials.");
+        }
+    </script>
+</body>
+</html>
