@@ -1,0 +1,101 @@
+# ============================================================
+# Docker Compose — E-Commerce Clickstream Analytics
+# DATA 228 Spring 2026 | Team 3
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ─── Spark Master ───
+  spark-master:
+    image: bitnamilegacy/spark:3.5
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    ports:
+      - "8080:8080"   # Spark Master UI
+      - "7077:7077"   # Spark Master port
+    volumes:
+      - ./:/app
+      - spark-data:/opt/spark/data
+    networks:
+      - clickstream-net
+
+  # ─── Spark Worker ───
+  spark-worker:
+    image: bitnamilegacy/spark:3.5
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_WORKER_CORES=4
+    volumes:
+      - ./:/app
+      - spark-data:/opt/spark/data
+    networks:
+      - clickstream-net
+
+  # ─── FastAPI Server ───
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: clickstream-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - ML_ARTIFACTS_DIR=/app/ml_artifacts
+    volumes:
+      - ./:/app
+      - ./ml_artifacts:/app/ml_artifacts
+    depends_on:
+      - spark-master
+    networks:
+      - clickstream-net
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+  # ─── Streamlit Dashboard ───
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: clickstream-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - ./:/app
+      - ./ml_artifacts:/app/ml_artifacts
+      - ./benchmark_results:/app/benchmark_results
+    depends_on:
+      - api
+    networks:
+      - clickstream-net
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+
+  # ─── MLflow Tracking Server ───
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    container_name: mlflow-server
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./mlruns:/mlruns
+    networks:
+      - clickstream-net
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns
+
+volumes:
+  spark-data:
+
+networks:
+  clickstream-net:
+    driver: bridge

@@ -1,0 +1,49 @@
+# Data
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/iceberg_warehouse/
+data/delta_tables/
+data/hudi_tables/
+
+# ML Artifacts
+ml_artifacts/
+mlruns/
+
+# Benchmark outputs
+benchmark_results/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Spark
+*.jar
+derby.log
+metastore_db/
+spark-warehouse/
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
