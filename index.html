@@ -181,8 +181,7 @@
 
     <script>
         // --- Configuration ---
-        const PUBLIC_IP = "3.236.85.144"; 
-        const API_URL = `http://${PUBLIC_IP}:8000/live-event`; 
+        const API_URL = "https://decade-progress-thievish.ngrok-free.dev/live-event"; 
         
         // Generate unique user ID for this browser session
         const userId = 'demo_user_' + Math.random().toString(36).substr(2, 5);
@@ -205,7 +204,10 @@
                 try {
                     const response = await fetch(API_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
                         body: JSON.stringify(event)
                     });
                     
