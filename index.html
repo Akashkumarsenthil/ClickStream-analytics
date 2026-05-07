@@ -181,8 +181,9 @@
 
     <script>
         // --- Configuration ---
-        // REPLACE THIS with your EC2 API URL (e.g., http://54.123.45.67:8000/ingest)
-        const API_URL = "http://YOUR_EC2_IP:8000/ingest"; 
+        // 🚨 ACTION: Replace 'YOUR_PUBLIC_EC2_IP' with your actual AWS Public IP address!
+        const PUBLIC_IP = "YOUR_PUBLIC_EC2_IP"; 
+        const API_URL = `http://${PUBLIC_IP}:8000/live-event`; 
         
         // Generate unique user ID for this browser session
         const userId = 'demo_user_' + Math.random().toString(36).substr(2, 5);
