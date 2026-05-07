@@ -492,10 +492,48 @@ streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
 
 ---
 
-## 13. Ad-Hoc Query Examples
+## 13. Live Lakehouse Query Demo
 
-### Iceberg Query
+### Start PySpark Query Session
 
+```bash
+cd /home/ubuntu/pipeline
+python3
+```
+
+Inside the Python prompt, initialize Spark and register the Delta and Hudi tables:
+
+```python
+from pyspark.sql import SparkSession
+
+BUCKET = "s3a://clickstream-analytics-akash"
+
+spark = (
+    SparkSession.builder
+    .appName("Demo-Adhoc-Lakehouse-Queries")
+    .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
+    .config("spark.sql.catalog.local.type", "hadoop")
+    .config("spark.sql.catalog.local.warehouse", f"{BUCKET}/batch/iceberg/")
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    .config("spark.kryoserializer.buffer", "64m")
+    .config("spark.kryoserializer.buffer.max", "1024m")
+    .getOrCreate()
+)
+
+spark.sparkContext.setLogLevel("WARN")
+
+delta = spark.read.format("delta").load(f"{BUCKET}/speed/delta/events/")
+delta.createOrReplaceTempView("delta_events")
+
+hudi = spark.read.format("hudi").load(f"{BUCKET}/serving/hudi/user_profiles/")
+hudi.createOrReplaceTempView("hudi_profiles")
+```
+
+### Apache Iceberg Queries
+
+Iceberg is used for historical batch analytics.
+
+**Query 1: Top Categories by Event Type**
 ```python
 spark.sql("""
 SELECT category_code, event_type, COUNT(*) AS events
@@ -506,34 +544,124 @@ LIMIT 20
 """).show(truncate=False)
 ```
 
-### Delta Query
-
+**Query 2: Event Type Distribution and Average Price**
 ```python
-delta = spark.read.format("delta").load("s3a://clickstream-analytics-akash/speed/delta/events/")
-delta.createOrReplaceTempView("delta_events")
-
 spark.sql("""
-SELECT product_id, COUNT(*) AS views
-FROM delta_events
-WHERE event_type = 'view'
-GROUP BY product_id
-ORDER BY views DESC
-LIMIT 20
-""").show()
+SELECT event_type, COUNT(*) AS events, ROUND(AVG(price), 2) AS avg_price
+FROM local.clickstream.rees46_events
+GROUP BY event_type
+ORDER BY events DESC
+""").show(truncate=False)
 ```
 
-### Hudi Query
-
+**Query 3: Daily Event Volume**
 ```python
-hudi = spark.read.format("hudi").load("s3a://clickstream-analytics-akash/serving/hudi/user_profiles/")
-hudi.createOrReplaceTempView("hudi_profiles")
-
 spark.sql("""
-SELECT user_id, total_spend, views, purchases, cart_adds
+SELECT event_date, event_type, COUNT(*) AS events
+FROM local.clickstream.rees46_events
+GROUP BY event_date, event_type
+ORDER BY event_date, event_type
+LIMIT 50
+""").show(truncate=False)
+```
+
+### Delta Lake Queries
+
+Delta Lake is used for speed-layer simulation and trending analytics.
+
+**Query 1: Top Viewed Products**
+```python
+spark.sql("""
+SELECT product_id, brand, category_code, COUNT(*) AS views
+FROM delta_events
+WHERE event_type = 'view'
+GROUP BY product_id, brand, category_code
+ORDER BY views DESC
+LIMIT 20
+""").show(truncate=False)
+```
+
+**Query 2: Hourly Event Volume**
+```python
+spark.sql("""
+SELECT event_type, HOUR(event_time) AS hour, COUNT(*) AS event_count
+FROM delta_events
+GROUP BY event_type, HOUR(event_time)
+ORDER BY event_type, hour
+LIMIT 50
+""").show(truncate=False)
+```
+
+**Query 3: Top Products by Purchase Count**
+```python
+spark.sql("""
+SELECT product_id, brand, category_code, COUNT(*) AS purchases
+FROM delta_events
+WHERE event_type = 'purchase'
+GROUP BY product_id, brand, category_code
+ORDER BY purchases DESC
+LIMIT 20
+""").show(truncate=False)
+```
+
+### Apache Hudi Queries
+
+Hudi is used as the serving layer for user profiles.
+
+**Query 1: Highest-Spending Users**
+```python
+spark.sql("""
+SELECT user_id, total_spend, views, purchases, cart_adds, unique_products
 FROM hudi_profiles
 ORDER BY total_spend DESC
 LIMIT 20
-""").show()
+""").show(truncate=False)
+```
+
+**Query 2: User Profile Summary**
+```python
+spark.sql("""
+SELECT
+  COUNT(*) AS user_profiles,
+  ROUND(AVG(total_spend), 2) AS avg_spend,
+  ROUND(AVG(views), 2) AS avg_views,
+  ROUND(AVG(purchases), 2) AS avg_purchases,
+  ROUND(AVG(cart_abandonment_rate), 4) AS avg_cart_abandonment_rate
+FROM hudi_profiles
+""").show(truncate=False)
+```
+
+**Query 3: High-Intent Users**
+```python
+spark.sql("""
+SELECT user_id, views, cart_adds, purchases, total_spend, cart_abandonment_rate
+FROM hudi_profiles
+WHERE cart_adds > 0
+ORDER BY purchases DESC, total_spend DESC
+LIMIT 20
+""").show(truncate=False)
+```
+
+### Optional: Query Live Demo Events from S3
+
+Live GitHub Pages events are landed separately in S3 under `live-events/`.
+
+```python
+live = spark.read.option("multiLine", "true").json(f"{BUCKET}/live-events/year=2026/month=05/day=06/*.json")
+live.createOrReplaceTempView("live_events")
+
+spark.sql("""
+SELECT event_type, product_id, brand, user_id, price, event_time, source
+FROM live_events
+ORDER BY event_time DESC
+LIMIT 20
+""").show(truncate=False)
+```
+
+### End Query Session
+```python
+spark.stop()
+exit()
 ```
 
 ---
