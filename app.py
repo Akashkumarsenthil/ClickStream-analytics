@@ -33,16 +33,6 @@ HISTORICAL_TOP_PRODUCTS = pd.DataFrame([
     {"product_id": "1002544", "category_code": "electronics.smartphone", "brand": "apple", "historical_views": 409169, "price": 468.92},
 ])
 
-PIPELINE_STATUS = [
-    {"Layer": "Raw", "Technology": "S3 CSV", "Status": "Complete", "Output": "109.9M REES46 raw events"},
-    {"Layer": "Bronze", "Technology": "Parquet", "Status": "Complete", "Output": "114.9M total rows"},
-    {"Layer": "Batch", "Technology": "Apache Iceberg", "Status": "Complete", "Output": "Historical SQL and snapshots"},
-    {"Layer": "Speed", "Technology": "Delta Lake", "Status": "Complete", "Output": "Trending products and hourly volume"},
-    {"Layer": "Serving", "Technology": "Apache Hudi", "Status": "Complete", "Output": "15.1M user profiles"},
-    {"Layer": "Gold", "Technology": "MLflow / S3", "Status": "Complete", "Output": "CTR, ALS, Product2Vec, K-Means"},
-    {"Layer": "API", "Technology": "FastAPI", "Status": "Live", "Output": "Serving endpoints and live ingestion"},
-]
-
 ICON_DATABASE = """<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="5" rx="2" stroke="#5EEAD4" stroke-width="1.8"/><rect x="4" y="10" width="16" height="5" rx="2" stroke="#5EEAD4" stroke-width="1.8"/><rect x="4" y="16" width="16" height="4" rx="2" stroke="#5EEAD4" stroke-width="1.8"/></svg>"""
 ICON_ACTIVITY = """<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M4 13h4l2-6 4 12 2-6h4" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
 ICON_MODEL = """<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#C084FC" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="#C084FC" stroke-width="2" stroke-linecap="round"/></svg>"""
@@ -141,12 +131,22 @@ with c3: metric_card(ICON_MODEL, "User Profiles", "15.1M", "Hudi")
 with c4: metric_card(ICON_ACTIVITY, "Live Events", f"{total_live_events:,}", f"{active_users} active users")
 with c5: metric_card(ICON_CHART, "Live Demo Value", f"${live_gmv:,.2f}", "S3 live-events")
 
-tab_live, tab_lakehouse, tab_ml, tab_benchmark, tab_events = st.tabs(["Live Analytics", "Lakehouse Layers", "Machine Learning", "Benchmarks", "Event Feed"])
+tab_live, tab_lakehouse, tab_ml, tab_benchmark, tab_events, tab_api = st.tabs([
+    "Live Analytics", "Lakehouse Layers", "Machine Learning", "Benchmarks", "Event Feed", "Serving Layer"
+])
 
 with tab_live:
-    if df_live.empty:
-        st.info("No live events found yet. Click products on the GitHub Pages demo to generate S3 events.")
-    else:
+    if not df_live.empty:
+        required_cols = ["event_time", "event_type", "product_id", "category_code", "brand", "price", "user_id", "session_id"]
+        present_cols = [c for c in required_cols if c in df_live.columns]
+        schema_match_pct = round(len(present_cols) / len(required_cols) * 100, 1)
+
+        q1, q2, q3, q4 = st.columns(4)
+        q1.metric("Schema Match", f"{schema_match_pct}%")
+        q2.metric("Unique Products", df_live["product_id"].nunique())
+        q3.metric("Unique Sessions", df_live["session_id"].nunique() if "session_id" in df_live.columns else 0)
+        q4.metric("Avg Event Price", f"${df_live['price'].mean():.2f}")
+
         left, right = st.columns([2, 1])
         with left:
             live_counts = df_live.groupby(["product_id", "brand", "category_code"], dropna=False).size().reset_index(name="live_events")
@@ -163,8 +163,22 @@ with tab_live:
                 st.markdown("**Top live category**")
                 st.markdown(f"### {top_category}")
                 st.success("LIVE")
+    else:
+        st.info("No live events found yet. Click products on the GitHub Pages demo to generate S3 events.")
 
 with tab_lakehouse:
+    summary_df = pd.DataFrame([
+        {"Component": "Bronze Layer", "Technology": "Parquet on S3", "Status": "Complete", "Result": "114,950,743 records"},
+        {"Component": "Batch Layer", "Technology": "Apache Iceberg", "Status": "Complete", "Result": "109.95M REES46 rows queryable"},
+        {"Component": "Speed Layer", "Technology": "Delta Lake", "Status": "Complete", "Result": "Trending products and hourly volume"},
+        {"Component": "Serving Layer", "Technology": "Apache Hudi", "Status": "Complete", "Result": "15,095,144 user profiles"},
+        {"Component": "ML Layer", "Technology": "MLflow + Spark ML", "Status": "Complete", "Result": "4 models trained"},
+        {"Component": "API Layer", "Technology": "FastAPI", "Status": "Live", "Result": "6 endpoints tested"},
+        {"Component": "Live Demo", "Technology": "GitHub Pages + S3", "Status": "Live", "Result": "Frontend clicks written to S3"}
+    ])
+    st.subheader("Project completion summary")
+    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
     a, b, c = st.columns(3)
     with a:
         with st.container(border=True):
@@ -190,19 +204,47 @@ with tab_ml:
         metrics = ml_summary.get("metrics", {})
         m1, m2, m3, m4 = st.columns(4)
         with m1: metric_card(ICON_MODEL, "CTR AUC-ROC", f"{metrics.get('ctr_auc_roc', 0):.4f}", "Criteo-style CTR")
-        with m2: metric_card(ICON_MODEL, "ALS Samples", metrics.get("als_sample_recommendation_users", 0), "Recommendations")
+        with m2: metric_card(ICON_MODEL, "ALS Samples", metrics.get('als_sample_recommendation_users', 0), "Recommendations")
         with m3: metric_card(ICON_MODEL, "Embeddings", f"{metrics.get('product_embedding_count', 0):,}", "Product2Vec")
         with m4: metric_card(ICON_MODEL, "Clusters", len(metrics.get("kmeans_segment_counts", {})), "K-Means")
+
+        model_results_df = pd.DataFrame([
+            {"Model": "CTR Prediction", "Dataset": "Criteo-schema click logs", "Input": "I1-I13 numerical features", "Output": "Click probability", "Metric": f"AUC-ROC: {metrics.get('ctr_auc_roc', 0):.4f}", "Serving Endpoint": "/predict/ctr"},
+            {"Model": "ALS Recommender", "Dataset": "REES46 interactions", "Input": "user_id, product_id, event_type", "Output": "Top recommendations", "Metric": f"Sample users: {metrics.get('als_sample_recommendation_users', 0)}", "Serving Endpoint": "/recommend/{user_id}"},
+            {"Model": "Product2Vec", "Dataset": "REES46 sequences", "Input": "Session sequences", "Output": "Similar products", "Metric": f"Embeddings: {metrics.get('product_embedding_count', 0):,}", "Serving Endpoint": "/similar/{product_id}"},
+            {"Model": "K-Means Segmentation", "Dataset": "Hudi user profiles", "Input": "views, carts, purchases, spend", "Output": "Customer segment", "Metric": f"Clusters: {len(metrics.get('kmeans_segment_counts', {}))}", "Serving Endpoint": "/user/{user_id}/segment"}
+        ])
+        st.subheader("Trained model inventory")
+        st.dataframe(model_results_df, use_container_width=True, hide_index=True)
 
 with tab_benchmark:
     if benchmark_results:
         bench_df = pd.DataFrame(benchmark_results)
+        bench_df["avg_query_sec"] = pd.to_numeric(bench_df["avg_query_sec"])
         fig_bench = px.bar(bench_df.sort_values("avg_query_sec"), x="format", y="avg_query_sec", color="format", text="avg_query_sec", title="Average query time by table format", template="plotly_dark")
         st.plotly_chart(fig_bench, use_container_width=True)
+
+        st.subheader("Benchmark results")
+        st.dataframe(bench_df[["format", "avg_query_sec", "runs", "feature"]], use_container_width=True, hide_index=True)
+        fastest = bench_df.sort_values("avg_query_sec").iloc[0]
+        st.info(f"For this single-node EC2/S3 workload, {fastest['format']} had the lowest average query time at {fastest['avg_query_sec']:.2f} seconds.")
 
 with tab_events:
     if not df_live.empty:
         st.dataframe(df_live.sort_values("event_time", ascending=False), use_container_width=True)
+
+with tab_api:
+    api_df = pd.DataFrame([
+        {"Endpoint": "/", "Purpose": "API health and project status", "Status": "Tested"},
+        {"Endpoint": "/trending", "Purpose": "Returns Delta speed-layer trending products", "Status": "Tested"},
+        {"Endpoint": "/recommend/{user_id}", "Purpose": "Returns ALS-style recommendations", "Status": "Tested"},
+        {"Endpoint": "/predict/ctr", "Purpose": "Returns CTR click probability", "Status": "Tested"},
+        {"Endpoint": "/user/{user_id}/segment", "Purpose": "Returns K-Means customer segment", "Status": "Tested"},
+        {"Endpoint": "/similar/{product_id}", "Purpose": "Returns Product2Vec similar products", "Status": "Tested"},
+        {"Endpoint": "/live-event", "Purpose": "Writes GitHub Pages click event to S3", "Status": "Tested"}
+    ])
+    st.subheader("Serving API endpoints")
+    st.dataframe(api_df, use_container_width=True, hide_index=True)
 
 if auto_refresh:
     time.sleep(refresh_seconds)
