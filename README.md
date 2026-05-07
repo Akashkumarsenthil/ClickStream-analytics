@@ -256,6 +256,9 @@ ORDER BY events DESC
 LIMIT 20;
 ```
 
+**Verified Iceberg output:**
+![Iceberg Query Results](docs/images/iceberg_query.png)
+
 ---
 
 ### 7.3 Speed Layer — Delta Lake
@@ -279,6 +282,9 @@ Top products were computed from the Delta event table, including:
 1004767   samsung   electronics.smartphone        861,675 views
 4804056   apple     electronics.audio.headphone   497,431 views
 ```
+
+**Verified Trending output:**
+![Delta Trending Results](docs/images/delta_query.png)
 
 ---
 
@@ -311,6 +317,9 @@ s3://clickstream-analytics-akash/serving/hudi/user_profiles/
 | `unique_products` | Number of unique products interacted with |
 | `category_diversity` | Number of categories interacted with |
 | `cart_abandonment_rate` | Cart-to-purchase behavior indicator |
+
+**Verified Hudi Profile output:**
+![Hudi Query Results](docs/images/hudi_query.png)
 
 ---
 
@@ -369,6 +378,9 @@ Verified benchmark results:
 | Delta Lake | 4.17s | 6.92s, 2.89s, 2.69s | Speed layer / trending analytics |
 | Apache Iceberg | 5.01s | 9.25s, 3.06s, 2.73s | Batch analytics / historical SQL |
 | Apache Hudi | 6.52s | 7.29s, 6.22s, 6.05s | Serving layer / user profiles |
+
+**Verified Benchmark timing:**
+![Benchmark Timing](docs/images/benchmark_results.png)
 
 These results are specific to this project’s single-node EC2 and S3-backed workload. They are not intended as universal table-format rankings.
 
