@@ -1,170 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClickStream Live Event Demo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClickStream Live Event Demo</title>
+  <style>
+    :root {
+      --bg: #0b1020; --panel: rgba(255,255,255,.07); --panel2: rgba(255,255,255,.11);
+      --border: rgba(255,255,255,.13); --text: #f8fafc; --muted: rgba(248,250,252,.65);
+      --blue: #38bdf8; --green: #34d399; --purple: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: Inter, Segoe UI, system-ui, sans-serif; color: var(--text);
+      background: radial-gradient(circle at top left, rgba(56,189,248,.18), transparent 34%),
+                  radial-gradient(circle at top right, rgba(167,139,250,.16), transparent 30%),
+                  linear-gradient(135deg, #090e1a, #111827 55%, #0b1020); }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; padding: 30px 0 48px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:30px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .mark { width:44px; height:44px; border-radius:15px; display:grid; place-items:center; background:var(--panel); border:1px solid var(--border); }
+    .brand-title { font-weight:800; } .brand-subtitle { color:var(--muted); font-size:.82rem; margin-top:2px; }
+    .counter { display:flex; gap:12px; align-items:center; border:1px solid var(--border); background:var(--panel); border-radius:999px; padding:12px 16px; }
+    #counter { width:32px; height:32px; display:grid; place-items:center; border-radius:999px; color:#020617; font-weight:900; background:linear-gradient(135deg,var(--blue),var(--green)); }
+    .hero { display:grid; grid-template-columns: 1.25fr .75fr; gap:22px; margin-bottom:30px; }
+    .panel { border:1px solid var(--border); background:linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.035)); border-radius:28px; padding:32px; box-shadow:0 24px 80px rgba(0,0,0,.32); backdrop-filter: blur(16px); }
+    .eyebrow { color:var(--blue); font-size:.82rem; font-weight:800; text-transform:uppercase; letter-spacing:.09em; margin-bottom:14px; }
+    h1 { font-size: clamp(2.2rem, 5vw, 4.15rem); line-height:1; letter-spacing:-.055em; margin-bottom:18px; }
+    .gradient { background:linear-gradient(90deg,#fff,#93c5fd,#c4b5fd,#5eead4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p { color:var(--muted); line-height:1.65; font-size:1.03rem; }
+    .steps h3 { margin-bottom:14px; }
+    .step { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+    .step:last-child { border-bottom:0; } .dot { width:10px; height:10px; border-radius:50%; background:var(--green); margin-top:5px; box-shadow:0 0 20px rgba(52,211,153,.9); }
+    .step b { display:block; font-size:.92rem; } .step span { display:block; color:var(--muted); font-size:.8rem; margin-top:2px; }
+    .section { display:flex; justify-content:space-between; align-items:end; gap:18px; margin:32px 0 18px; }
+    .section p { color:var(--muted); margin-top:6px; }
+    .pill { border:1px solid rgba(52,211,153,.26); color:#86efac; background:rgba(52,211,153,.12); border-radius:999px; padding:8px 12px; font-weight:800; font-size:.82rem; white-space:nowrap; }
+    .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:22px; }
+    .card { min-height:250px; border:1px solid var(--border); background:var(--panel); border-radius:26px; padding:24px; cursor:pointer; transition:.2s; backdrop-filter: blur(14px); }
+    .card:hover { transform:translateY(-7px); background:var(--panel2); box-shadow:0 24px 70px rgba(0,0,0,.34); }
+    .icon { width:58px; height:58px; border-radius:18px; display:grid; place-items:center; background:rgba(255,255,255,.075); border:1px solid rgba(255,255,255,.09); margin-bottom:22px; }
+    .meta { display:flex; justify-content:space-between; gap:14px; margin-bottom:10px; }
+    .name { font-size:1.2rem; font-weight:820; } .price { color:var(--green); font-weight:900; white-space:nowrap; }
+    .category { color:var(--muted); font-size:.88rem; margin-bottom:18px; }
+    .footer { margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:18px; display:flex; justify-content:space-between; align-items:center; }
+    .brand-tag { border-radius:999px; background:rgba(255,255,255,.08); color:var(--muted); padding:6px 10px; font-weight:800; font-size:.78rem; text-transform:capitalize; }
+    .send { color:var(--blue); font-weight:850; font-size:.82rem; }
+    .toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%) translateY(18px); opacity:0; pointer-events:none; display:flex; gap:12px; align-items:center; min-width:280px; padding:14px 18px; border-radius:18px; background:rgba(15,23,42,.93); border:1px solid rgba(52,211,153,.32); box-shadow:0 25px 80px rgba(0,0,0,.42); transition:.18s; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    @media (max-width:900px){ .hero{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:620px){ .shell{width:min(100% - 28px,1160px)}.topbar,.section{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.panel{padding:24px} }
+  </style>
 </head>
-<body class="bg-light">
-
-    <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container">
-            <span class="navbar-brand">ClickStream Analytics</span>
-            <span class="text-white">Events sent: <span class="badge bg-success" id="counter">0</span></span>
-        </div>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <div class="brand"><div class="mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 13h4l2-6 4 12 2-6h4" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="brand-title">ClickStream Analytics</div><div class="brand-subtitle">Live event generator for lakehouse demo</div></div></div>
+      <div class="counter"><span>Live S3 Events</span><span id="counter">0</span></div>
     </nav>
-
-    <div class="container">
-        <h2>Live Event Generator</h2>
-        <p class="text-muted mb-3">Click a product card to send a clickstream event through FastAPI into S3. The Streamlit dashboard picks it up in real time.</p>
-
-        <div class="alert alert-info py-2 mb-4" role="alert">
-            <strong>Event flow:</strong> Product click → FastAPI <code>/live-event</code> → S3 <code>live-events/</code> → Streamlit dashboard
-        </div>
-
-        <h5 class="text-muted mb-3">Product Catalog</h5>
-
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="1004856" data-category="electronics.smartphone" data-brand="samsung" data-price="129.99" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">Samsung</span>
-                        <h5 class="card-title">Samsung S20</h5>
-                        <p class="card-text text-muted small">electronics.smartphone</p>
-                        <p class="text-success fw-bold mb-0">$129.99</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="1005115" data-category="electronics.smartphone" data-brand="apple" data-price="947.09" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">Apple</span>
-                        <h5 class="card-title">iPhone 12</h5>
-                        <p class="card-text text-muted small">electronics.smartphone</p>
-                        <p class="text-success fw-bold mb-0">$947.09</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="4804056" data-category="electronics.audio.headphone" data-brand="apple" data-price="162.00" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">Apple</span>
-                        <h5 class="card-title">AirPods Pro</h5>
-                        <p class="card-text text-muted small">electronics.audio.headphone</p>
-                        <p class="text-success fw-bold mb-0">$162.00</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="1004767" data-category="electronics.smartphone" data-brand="samsung" data-price="247.06" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">Samsung</span>
-                        <h5 class="card-title">Samsung A51</h5>
-                        <p class="card-text text-muted small">electronics.smartphone</p>
-                        <p class="text-success fw-bold mb-0">$247.06</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="1307073" data-category="computers.notebook" data-brand="hp" data-price="450.45" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">HP</span>
-                        <h5 class="card-title">HP Pavilion</h5>
-                        <p class="card-text text-muted small">computers.notebook</p>
-                        <p class="text-success fw-bold mb-0">$450.45</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 product-card" data-product-id="1002544" data-category="electronics.smartphone" data-brand="apple" data-price="460.51" style="cursor:pointer;">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">Apple</span>
-                        <h5 class="card-title">iPhone 11</h5>
-                        <p class="card-text text-muted small">electronics.smartphone</p>
-                        <p class="text-success fw-bold mb-0">$460.51</p>
-                    </div>
-                    <div class="card-footer bg-white text-end">
-                        <small class="text-primary">Send event →</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <p class="text-center text-muted small">Events are written as REES46-compatible JSON to Amazon S3.</p>
-    </div>
-
-    <!-- Toast -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:11">
-        <div id="toast" class="toast align-items-center text-bg-success border-0" role="alert">
-            <div class="d-flex">
-                <div class="toast-body">Event ingested → written to S3</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API_URL = "https://decade-progress-thievish.ngrok-free.dev/live-event";
-        const userId = "demo_user_" + Math.random().toString(36).substring(2, 7);
-        const sessionId = "demo_session_" + Math.random().toString(36).substring(2, 8);
-        let eventCount = 0;
-        const toastEl = new bootstrap.Toast(document.getElementById("toast"), { delay: 2000 });
-        const counter = document.getElementById("counter");
-
-        async function sendEvent(card) {
-            const payload = {
-                event_type: "view",
-                product_id: card.dataset.productId,
-                category_code: card.dataset.category,
-                brand: card.dataset.brand,
-                price: parseFloat(card.dataset.price),
-                user_id: userId,
-                session_id: sessionId
-            };
-
-            try {
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) {
-                    eventCount++;
-                    counter.textContent = eventCount;
-                    toastEl.show();
-                } else {
-                    alert("API error: " + res.status);
-                }
-            } catch (err) {
-                alert("Could not connect to FastAPI. Check that EC2 and ngrok are running.");
-            }
-        }
-
-        document.querySelectorAll(".product-card").forEach(card => {
-            card.addEventListener("click", () => sendEvent(card));
-        });
-    </script>
+    <section class="hero">
+      <div class="panel"><div class="eyebrow">Live clickstream simulation</div><h1>Generate live product events for the <span class="gradient">lakehouse dashboard</span></h1><p>Click any product card to emit a REES46-compatible event through FastAPI. The event is written to Amazon S3 under the live-events prefix and visualized in Streamlit as a real-time overlay on top of the historical baseline.</p></div>
+      <aside class="panel steps"><h3>Event flow</h3><div class="step"><i class="dot"></i><div><b>Product click</b><span>Browser creates a clickstream event</span></div></div><div class="step"><i class="dot"></i><div><b>FastAPI ingestion</b><span>Event sent to /live-event endpoint</span></div></div><div class="step"><i class="dot"></i><div><b>S3 live-events</b><span>JSON event written to cloud storage</span></div></div><div class="step"><i class="dot"></i><div><b>Streamlit dashboard</b><span>Live feed refreshes from S3</span></div></div></aside>
+    </section>
+    <div class="section"><div><h2>Demo product catalog</h2><p>Each card maps to product ID, category, brand, price, user ID, and session ID.</p></div><div class="pill">API URL configurable</div></div>
+    <section class="grid" id="products"></section>
+  </main>
+  <div class="toast" id="toast"><b>Event ingested successfully</b><span style="color:rgba(248,250,252,.55)">Written to S3 live-events prefix</span></div>
+  <script>
+    const API_BASE_URL = "https://YOUR_NGROK_OR_API_URL";
+    const API_URL = `${API_BASE_URL}/live-event`;
+    const products = [
+      ["1004856","Samsung S20","electronics.smartphone","samsung",129.99,"#38bdf8"],
+      ["1005115","iPhone 12","electronics.smartphone","apple",947.09,"#a78bfa"],
+      ["4804056","AirPods Pro","electronics.audio.headphone","apple",162.00,"#34d399"],
+      ["1004767","Samsung A51","electronics.smartphone","samsung",247.06,"#60a5fa"],
+      ["1307073","HP Pavilion","computers.notebook","hp",450.45,"#fbbf24"],
+      ["1002544","iPhone 11","electronics.smartphone","apple",460.51,"#c084fc"]
+    ];
+    const userId = "demo_user_" + Math.random().toString(36).substring(2, 7);
+    const sessionId = "demo_session_" + Math.random().toString(36).substring(2, 8);
+    let eventCount = 0;
+    const grid = document.getElementById("products");
+    const counter = document.getElementById("counter");
+    const toast = document.getElementById("toast");
+    function productIcon(color){return `<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2.4" stroke="${color}" stroke-width="1.8"/><path d="M10 18h4" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/></svg>`}
+    products.forEach(([id,name,cat,brand,price,color]) => {
+      grid.insertAdjacentHTML('beforeend', `<div class="card" data-product-id="${id}" data-category="${cat}" data-brand="${brand}" data-price="${price}"><div class="icon">${productIcon(color)}</div><div class="meta"><h2 class="name">${name}</h2><div class="price">$${price.toFixed(2)}</div></div><p class="category">${cat}</p><div class="footer"><span class="brand-tag">${brand}</span><span class="send">Send event</span></div></div>`);
+    });
+    function showToast(){ toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 2200); }
+    async function sendEvent(card){
+      const event = { event_type:"view", product_id:card.dataset.productId, category_code:card.dataset.category, brand:card.dataset.brand, price:parseFloat(card.dataset.price), user_id:userId, session_id:sessionId, source:"github_pages_demo" };
+      try {
+        const res = await fetch(API_URL, { method:"POST", headers:{"Content-Type":"application/json","ngrok-skip-browser-warning":"true"}, body:JSON.stringify(event) });
+        if(res.ok){ eventCount++; counter.textContent=eventCount; showToast(); } else { alert("API Error: " + res.status); console.error(await res.text()); }
+      } catch(err){ console.error(err); alert("Could not connect to FastAPI. Update API_BASE_URL and confirm the server/tunnel are running."); }
+    }
+    document.querySelectorAll('.card').forEach(card => card.addEventListener('click', () => sendEvent(card)));
+  </script>
 </body>
 </html>
