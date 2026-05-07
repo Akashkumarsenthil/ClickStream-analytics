@@ -140,7 +140,7 @@ s3://clickstream-analytics-akash/
 │               ├── data/
 │               └── metadata/
 ├── speed/
-│   └── delta/
+│   └── zone/delta/
 │       ├── events/
 │       └── trending/
 ├── serving/
@@ -157,7 +157,7 @@ s3://clickstream-analytics-akash/
 
 ---
 
-## Pipeline Scripts
+## Map of your .py files
 
 | Script | Purpose | Input | Output |
 |---|---|---|---|
@@ -190,32 +190,15 @@ Tables created:
 - `local.clickstream.rees46_events`
 - `local.clickstream.criteo_clicks`
 
-Sample query:
-```sql
-SELECT category_code, event_type, COUNT(*) AS events
-FROM local.clickstream.rees46_events
-WHERE category_code IS NOT NULL
-GROUP BY category_code, event_type
-ORDER BY events DESC
-LIMIT 20;
-```
+**Verified SQL output:**
+![Iceberg Query Results](docs/images/iceberg_query.png)
 
 ### Speed Layer — Delta Lake
 
 Real-time event processing simulation with ACID transactions, transaction log, and partition pruning on `event_type`.
 
-Outputs:
-- `speed/delta/events/` — full event table partitioned by `event_type`
-- `speed/delta/trending/` — top 100 trending products by view count
-
-Sample trending output:
-```
-product_id  brand    category                       view_count
-1004856     samsung  electronics.smartphone         942,167
-1005115     apple    electronics.smartphone         910,725
-1004767     samsung  electronics.smartphone         861,675
-4804056     apple    electronics.audio.headphone    497,431
-```
+**Verified Trending output:**
+![Delta Trending Results](docs/images/delta_query.png)
 
 ### Serving Layer — Apache Hudi
 
@@ -223,17 +206,8 @@ Mutable user profiles using Merge-on-Read (MOR) tables with upsert support for i
 
 Output: `serving/hudi/user_profiles/` — **15,095,144 user profiles**
 
-| Profile Field | Description |
-|---|---|
-| `user_id` | User identifier |
-| `total_events` | Total interactions |
-| `total_spend` | Cumulative purchase spend |
-| `purchases` | Purchase count |
-| `cart_adds` | Cart event count |
-| `views` | View event count |
-| `unique_products` | Distinct products interacted with |
-| `category_diversity` | Distinct categories interacted with |
-| `cart_abandonment_rate` | Cart-to-purchase behavior ratio |
+**Verified Hudi Profile output:**
+![Hudi Query Results](docs/images/hudi_query.png)
 
 ---
 
@@ -263,13 +237,6 @@ ML summary saved to `s3://clickstream-analytics-akash/ml-artifacts/ml_summary.js
 }
 ```
 
-Customer segment labels:
-- **Loyal Whales** — high spend, frequent purchases
-- **Cart Abandoners** — high cart rate, low conversions
-- **Window Shoppers** — high views, minimal purchase intent
-- **Occasional Buyers** — moderate engagement, periodic purchases
-- **New Visitors** — low activity, early-stage users
-
 ---
 
 ## Benchmark Results
@@ -282,9 +249,8 @@ Query benchmark across all three table formats on representative workloads runni
 | Apache Iceberg | 5.01s | 9.25s, 3.06s, 2.73s | Batch analytics / historical SQL |
 | Apache Hudi | 6.52s | 7.29s, 6.22s, 6.05s | Serving layer / user profiles |
 
-> Results are workload-specific and reflect single-node EC2 + S3 latency characteristics. They are not intended as universal table-format rankings.
-
-Benchmark results saved to `s3://clickstream-analytics-akash/benchmark/results.json`.
+**Verified Benchmark timing:**
+![Benchmark Timing](docs/images/benchmark_results.png)
 
 ---
 
@@ -302,50 +268,11 @@ Benchmark results saved to `s3://clickstream-analytics-akash/benchmark/results.j
 | `/similar/{product_id}` | GET | Product2Vec similar products |
 | `/live-event` | POST | Write GitHub Pages click event to S3 |
 
-### Run API
-
-```bash
-cd /home/ubuntu/pipeline
-python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
-```
-
-### Example Live Event Request
-
-```bash
-curl -X POST http://localhost:8000/live-event \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "view",
-    "product_id": "1004856",
-    "category_code": "electronics.smartphone",
-    "brand": "samsung",
-    "price": 129.05,
-    "user_id": "demo_user_001",
-    "session_id": "demo_session_001"
-  }'
-```
-
 ---
 
 ## Live GitHub Pages Integration
 
 A GitHub Pages product demo page emits REES46-compatible click events through FastAPI into S3, simulating a real e-commerce frontend.
-
-**Live event schema:**
-```json
-{
-  "event_time": "2026-05-07T00:07:44.534143Z",
-  "event_type": "view",
-  "product_id": "1004856",
-  "category_code": "electronics.smartphone",
-  "brand": "samsung",
-  "price": 129.05,
-  "user_id": "demo_user_001",
-  "session_id": "demo_session_001",
-  "event_id": "uuid",
-  "source": "github_pages_demo"
-}
-```
 
 **Live event flow:**
 ```
@@ -366,61 +293,7 @@ Historical baseline + live event overlay
 
 Interactive analytics application presenting all pipeline outputs in a single interface.
 
-| Tab | Purpose |
-|---|---|
-| Live Analytics | Live S3 event counts, active users, live GMV, and product overlay |
-| Lakehouse Layers | Iceberg, Delta, and Hudi layer status |
-| Machine Learning | Trained model metrics and segment summary |
-| Benchmarks | Iceberg vs Delta vs Hudi query timing chart |
-| Event Feed | Raw live events written to S3 |
-
-**Run dashboard:**
-```bash
-streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
-```
-
 **Live URL:** https://clickstream-analytics-xzmq8edm4qh3uzkgm7epgl.streamlit.app
-
----
-
-## Ad-Hoc Query Examples
-
-**Iceberg — category analytics:**
-```python
-spark.sql("""
-    SELECT category_code, event_type, COUNT(*) AS events
-    FROM local.clickstream.rees46_events
-    GROUP BY category_code, event_type
-    ORDER BY events DESC
-    LIMIT 20
-""").show(truncate=False)
-```
-
-**Delta Lake — trending products:**
-```python
-delta = spark.read.format("delta").load("s3a://clickstream-analytics-akash/speed/delta/events/")
-delta.createOrReplaceTempView("delta_events")
-spark.sql("""
-    SELECT product_id, COUNT(*) AS views
-    FROM delta_events
-    WHERE event_type = 'view'
-    GROUP BY product_id
-    ORDER BY views DESC
-    LIMIT 20
-""").show()
-```
-
-**Hudi — top spending users:**
-```python
-hudi = spark.read.format("hudi").load("s3a://clickstream-analytics-akash/serving/hudi/user_profiles/")
-hudi.createOrReplaceTempView("hudi_profiles")
-spark.sql("""
-    SELECT user_id, total_spend, views, purchases, cart_adds
-    FROM hudi_profiles
-    ORDER BY total_spend DESC
-    LIMIT 20
-""").show()
-```
 
 ---
 
@@ -457,31 +330,10 @@ spark.sql("""
 
 ---
 
-## Demo Walkthrough
-
-**Recommended sequence for the live presentation:**
-
-1. **S3 bucket structure** — show all layers: `raw-csv/`, `bronze/`, `batch/iceberg/`, `speed/delta/`, `serving/hudi/`, `ml-artifacts/`, `benchmark/`, `live-events/`. Point out the `.hoodie/` folder (Hudi), `_delta_log/` (Delta), and `metadata/` (Iceberg) as visual proof of three distinct table formats.
-
-2. **Streamlit dashboard** — walk through Live Analytics, Lakehouse Layers, Machine Learning, Benchmarks, and Event Feed tabs.
-
-3. **GitHub Pages clickstream demo** — click a product card and show the live event counter increment.
-
-4. **S3 live event proof** — show a new JSON file appearing under `live-events/` in real time.
-
-5. **FastAPI docs** — open `/docs` and demonstrate `/trending`, `/recommend/{user_id}`, `/predict/ctr`, `/user/{user_id}/segment`, `/similar/{product_id}`, and `/live-event`.
-
-6. **Ad-hoc Spark SQL** — run the Iceberg category query and Delta trending query live.
-
-7. **Benchmark results** — present the three-format timing comparison: Delta 4.17s, Iceberg 5.01s, Hudi 6.52s, with explanation of why each format has different read characteristics.
-
----
-
 ## Notes and Limitations
 
 - The REES46 dataset was processed at full scale using both available months (Oct + Nov 2019), totalling 109.95M events.
-- The Criteo implementation uses 5M Criteo-schema rows for stable single-node training and demonstration purposes.
-- Benchmark results are workload-specific and reflect single-node EC2 size, S3 round-trip latency, table layout, and query type. They are not intended as universal table-format rankings.
+- Benchmark results are workload-specific and reflect single-node EC2 size, S3 round-trip latency, table layout, and query type.
 - The GitHub Pages integration simulates a real e-commerce frontend by emitting REES46-compatible events through FastAPI into S3.
 
 ---
