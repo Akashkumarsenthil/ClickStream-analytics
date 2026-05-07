@@ -486,18 +486,6 @@ spark.sql("""
 
 ---
 
-## Security
-
-Before final submission or public release:
-
-- Remove hardcoded AWS credentials from all code and config files.
-- Rotate the IAM access key used during the project.
-- Restrict the EC2 security group to remove open SSH and port access.
-- Disable public ports 8000 and 8501 when no longer needed.
-- Do not commit `.aws/`, logs containing credentials, or large generated artifacts to the repository.
-
----
-
 ## Summary
 
 This project demonstrates a complete end-to-end lakehouse-based clickstream analytics system using real e-commerce event data at scale. The pipeline proves:
