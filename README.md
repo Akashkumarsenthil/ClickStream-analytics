@@ -559,17 +559,16 @@ LIMIT 20
 
 ---
 
-## 17. Notes and Limitations
+## 16. Notes and Limitations
 
 - The REES46 dataset was processed at large scale with 109.95M events from the available raw files.
 - The Criteo implementation uses 5M Criteo-schema rows for stable single-node training and demonstration.
 - Benchmark results are workload-specific and depend on EC2 instance size, S3 latency, table layout, caching, and query type.
 - The GitHub Pages integration simulates a real e-commerce frontend by emitting REES46-compatible events through FastAPI into S3.
-- For security, public API and SSH access should be restricted after the demo. Any exposed AWS credentials should be rotated after project completion.
 
 ---
 
-## 19. Summary
+## 17. Summary
 
 This project demonstrates an end-to-end lakehouse-based clickstream analytics system using real e-commerce event data, three modern open table formats, multiple Spark ML models, API serving, dashboarding, benchmarking, and live event ingestion.
 
