@@ -22,7 +22,7 @@ S3_LIVE_PREFIX = "live-events/"
 S3_ML_SUMMARY_KEY = "ml-artifacts/ml_summary.json"
 S3_BENCHMARK_KEY = "benchmark/results.json"
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://decade-progress-thievish.ngrok-free.dev")
 
 HISTORICAL_TOP_PRODUCTS = pd.DataFrame([
     {"product_id": "1004856", "category_code": "electronics.smartphone", "brand": "samsung", "historical_views": 942167, "price": 129.05},
