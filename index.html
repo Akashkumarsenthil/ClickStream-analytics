@@ -1,232 +1,763 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 ClickStream Demo - Click to Generate Live S3 Events!</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClickStream Live Event Demo</title>
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0b1020;
+            --bg-secondary: #111827;
+            --card-bg: rgba(255, 255, 255, 0.055);
+            --card-bg-hover: rgba(255, 255, 255, 0.095);
+            --border: rgba(255, 255, 255, 0.11);
+            --border-strong: rgba(255, 255, 255, 0.22);
+            --text-primary: #f8fafc;
+            --text-secondary: rgba(248, 250, 252, 0.68);
+            --text-muted: rgba(248, 250, 252, 0.48);
+            --accent-blue: #38bdf8;
+            --accent-purple: #a78bfa;
+            --accent-green: #34d399;
+            --accent-yellow: #fbbf24;
+            --accent-red: #fb7185;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             min-height: 100vh;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            color: var(--text-primary);
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 34%),
+                radial-gradient(circle at top right, rgba(167, 139, 250, 0.16), transparent 30%),
+                linear-gradient(135deg, #090e1a 0%, #111827 55%, #0b1020 100%);
             overflow-x: hidden;
         }
-        .header {
-            text-align: center;
-            padding: 50px 20px;
-            max-width: 800px;
+
+        .page-shell {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 28px 0 48px;
         }
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 15px;
-            background: linear-gradient(to right, #00dbde, #fc00ff);
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(167, 139, 250, 0.22));
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .brand-title {
+            font-size: 0.98rem;
+            font-weight: 760;
+            letter-spacing: 0.01em;
+        }
+
+        .brand-subtitle {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            margin-top: 2px;
+        }
+
+        .counter-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
+        }
+
+        .counter-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        #counter {
+            min-width: 32px;
+            height: 32px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #020617;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            font-weight: 850;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.25fr 0.75fr;
+            gap: 22px;
+            align-items: stretch;
+            margin-bottom: 28px;
+        }
+
+        .hero-panel {
+            padding: 34px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-blue);
+            font-size: 0.83rem;
+            font-weight: 760;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.1rem, 5vw, 4.2rem);
+            line-height: 0.98;
+            letter-spacing: -0.055em;
+            margin-bottom: 18px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #f8fafc 0%, #93c5fd 42%, #c4b5fd 76%, #5eead4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.8;
-            line-height: 1.6;
+
+        .hero p {
+            max-width: 760px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            font-size: 1.03rem;
         }
+
+        .pipeline-card {
+            padding: 28px;
+            border-radius: 28px;
+            background: rgba(2, 6, 23, 0.42);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .pipeline-card h3 {
+            font-size: 1rem;
+            margin-bottom: 18px;
+        }
+
+        .pipeline-step {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .pipeline-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.8);
+            flex: 0 0 auto;
+        }
+
+        .step-title {
+            font-weight: 720;
+            font-size: 0.9rem;
+        }
+
+        .step-detail {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            margin-top: 2px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 18px;
+            margin: 32px 0 18px;
+        }
+
+        .section-header h2 {
+            font-size: 1.35rem;
+            letter-spacing: -0.02em;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin-top: 6px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(52, 211, 153, 0.12);
+            color: #86efac;
+            border: 1px solid rgba(52, 211, 153, 0.24);
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34d399;
+        }
+
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            padding: 20px;
-            max-width: 1100px;
-            width: 100%;
-            margin-bottom: 50px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
         }
+
         .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 40px 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
+            min-height: 255px;
+            padding: 24px;
+            border-radius: 26px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+            backdrop-filter: blur(14px);
         }
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: 0.5s;
-        }
-        .card:hover::before {
-            left: 100%;
-        }
+
         .card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            transform: translateY(-7px);
+            background: var(--card-bg-hover);
+            border-color: var(--border-strong);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
         }
+
         .card:active {
-            transform: scale(0.95);
+            transform: translateY(-2px) scale(0.985);
         }
-        .emoji {
-            font-size: 4em;
-            margin-bottom: 20px;
-            display: block;
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), transparent 40%, rgba(167, 139, 250, 0.15));
+            opacity: 0;
+            transition: opacity 220ms ease;
+            pointer-events: none;
         }
-        .card h2 {
-            margin-bottom: 8px;
-            font-size: 1.4em;
-            font-weight: 600;
+
+        .card:hover::before {
+            opacity: 1;
         }
-        .card .price {
-            color: #00dbde;
-            font-weight: 700;
-            font-size: 1.2em;
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .icon-box {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 22px;
+            background: rgba(255, 255, 255, 0.075);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 14px;
             margin-bottom: 10px;
         }
-        .card p {
-            opacity: 0.6;
-            font-size: 0.9em;
+
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: 780;
+            letter-spacing: -0.02em;
         }
+
+        .price {
+            color: var(--accent-green);
+            font-weight: 820;
+            font-size: 1.05rem;
+            white-space: nowrap;
+        }
+
+        .category {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .brand-tag {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .send-label {
+            color: var(--accent-blue);
+            font-size: 0.82rem;
+            font-weight: 740;
+        }
+
         .toast {
             position: fixed;
-            bottom: 30px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #4CAF50;
-            color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            display: none;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            bottom: 30px;
+            transform: translateX(-50%) translateY(18px);
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 280px;
+            padding: 14px 18px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.92);
+            color: var(--text-primary);
+            border: 1px solid rgba(52, 211, 153, 0.32);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(16px);
             z-index: 1000;
-            font-weight: 600;
+            transition: opacity 180ms ease, transform 180ms ease;
         }
-        .click-counter {
-            position: fixed;
-            top: 25px;
-            right: 25px;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(5px);
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-size: 1.1em;
-            border: 1px solid rgba(255,255,255,0.1);
-            font-weight: 500;
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
-        #counter {
-            color: #fc00ff;
-            font-weight: 700;
+
+        .toast-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: rgba(52, 211, 153, 0.14);
+        }
+
+        .toast-title {
+            font-weight: 800;
+            font-size: 0.92rem;
+        }
+
+        .toast-subtitle {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            margin-top: 2px;
+        }
+
+        .footer {
+            margin-top: 34px;
+            padding: 18px;
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 0.86rem;
+        }
+
+        svg {
+            display: block;
+        }
+
+        @media (max-width: 920px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 620px) {
+            .page-shell {
+                width: min(100% - 28px, 1180px);
+                padding-top: 18px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .counter-card {
+                width: 100%;
+                justify-content: space-between;
+                border-radius: 18px;
+            }
+
+            .hero-panel,
+            .pipeline-card {
+                padding: 24px;
+                border-radius: 22px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="click-counter">Live S3 Events: <span id="counter">0</span></div>
-    
-    <div class="header">
-        <h1>🖱️ Live Clickstream Simulation</h1>
-        <p>Click any product to emit a REES46-compatible event directly to S3. These events will overlay on top of the historical baseline in the dashboard.</p>
-    </div>
-    
-    <div class="grid">
-        <div class="card" data-product-id="1004856" data-category="electronics.smartphone" data-brand="samsung" data-price="129.99">
-            <span class="emoji">📱</span>
-            <div class="price">$129.99</div>
-            <h2>Samsung S20</h2>
-            <p>electronics.smartphone</p>
-        </div>
-        <div class="card" data-product-id="1005115" data-category="electronics.smartphone" data-brand="apple" data-price="947.09">
-            <span class="emoji">🍏</span>
-            <div class="price">$947.09</div>
-            <h2>iPhone 12</h2>
-            <p>electronics.smartphone</p>
-        </div>
-        <div class="card" data-product-id="4804056" data-category="electronics.audio.headphone" data-brand="apple" data-price="162.00">
-            <span class="emoji">🎧</span>
-            <div class="price">$162.00</div>
-            <h2>AirPods Pro</h2>
-            <p>electronics.audio.headphone</p>
-        </div>
-        <div class="card" data-product-id="1004767" data-category="electronics.smartphone" data-brand="samsung" data-price="247.06">
-            <span class="emoji">📱</span>
-            <div class="price">$247.06</div>
-            <h2>Samsung A51</h2>
-            <p>electronics.smartphone</p>
-        </div>
-        <div class="card" data-product-id="1307073" data-category="computers.notebook" data-brand="hp" data-price="450.45">
-            <span class="emoji">💻</span>
-            <div class="price">$450.45</div>
-            <h2>HP Pavilion</h2>
-            <p>computers.notebook</p>
-        </div>
-        <div class="card" data-product-id="1002544" data-category="electronics.smartphone" data-brand="apple" data-price="460.51">
-            <span class="emoji">🍏</span>
-            <div class="price">$460.51</div>
-            <h2>iPhone 11</h2>
-            <p>electronics.smartphone</p>
-        </div>
-    </div>
 
-    <div class="toast" id="toast">🚀 S3 Event Ingested!</div>
+<body>
+    <main class="page-shell">
+        <nav class="topbar">
+            <div class="brand">
+                <div class="brand-mark">
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 13h4l2-6 4 12 2-6h4" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="brand-title">ClickStream Analytics</div>
+                    <div class="brand-subtitle">Live event generator for lakehouse demo</div>
+                </div>
+            </div>
+
+            <div class="counter-card">
+                <span class="counter-label">Live S3 Events</span>
+                <span id="counter">0</span>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-panel">
+                <div class="eyebrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="8" stroke="#38bdf8" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="3" fill="#38bdf8"/>
+                    </svg>
+                    Live Clickstream Simulation
+                </div>
+
+                <h1>
+                    Generate live product events for the
+                    <span class="gradient-text">lakehouse dashboard</span>
+                </h1>
+
+                <p>
+                    Click any product card to emit a REES46-compatible event through FastAPI.
+                    The event is written to Amazon S3 under the live-events prefix and can be
+                    visualized in Streamlit as a real-time overlay on top of the historical baseline.
+                </p>
+            </div>
+
+            <aside class="pipeline-card">
+                <h3>Event flow</h3>
+
+                <div class="pipeline-step">
+                    <span class="step-dot"></span>
+                    <div>
+                        <div class="step-title">Product click</div>
+                        <div class="step-detail">Browser creates a clickstream event</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-step">
+                    <span class="step-dot"></span>
+                    <div>
+                        <div class="step-title">FastAPI ingestion</div>
+                        <div class="step-detail">Event sent to /live-event endpoint</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-step">
+                    <span class="step-dot"></span>
+                    <div>
+                        <div class="step-title">S3 live-events</div>
+                        <div class="step-detail">JSON event written to cloud storage</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-step">
+                    <span class="step-dot"></span>
+                    <div>
+                        <div class="step-title">Streamlit dashboard</div>
+                        <div class="step-detail">Live feed refreshes from S3</div>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <div class="section-header">
+            <div>
+                <h2>Demo product catalog</h2>
+                <p>Each card maps to a product ID, category, brand, price, user ID, and session ID.</p>
+            </div>
+
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                API connected through HTTPS tunnel
+            </div>
+        </div>
+
+        <section class="grid">
+            <div class="card" data-product-id="1004856" data-category="electronics.smartphone" data-brand="samsung" data-price="129.99">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="7" y="2.8" width="10" height="18.4" rx="2.4" stroke="#38bdf8" stroke-width="1.8"/>
+                            <path d="M10 18h4" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">Samsung S20</h2>
+                        <div class="price">$129.99</div>
+                    </div>
+                    <p class="category">electronics.smartphone</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">samsung</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" data-product-id="1005115" data-category="electronics.smartphone" data-brand="apple" data-price="947.09">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="7" y="2.8" width="10" height="18.4" rx="2.4" stroke="#a78bfa" stroke-width="1.8"/>
+                            <path d="M10 18h4" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M13 5h-2" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">iPhone 12</h2>
+                        <div class="price">$947.09</div>
+                    </div>
+                    <p class="category">electronics.smartphone</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">apple</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" data-product-id="4804056" data-category="electronics.audio.headphone" data-brand="apple" data-price="162.00">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 13v-1a7 7 0 0 1 14 0v1" stroke="#34d399" stroke-width="1.9" stroke-linecap="round"/>
+                            <rect x="3.8" y="12.5" width="4" height="7" rx="1.6" stroke="#34d399" stroke-width="1.8"/>
+                            <rect x="16.2" y="12.5" width="4" height="7" rx="1.6" stroke="#34d399" stroke-width="1.8"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">AirPods Pro</h2>
+                        <div class="price">$162.00</div>
+                    </div>
+                    <p class="category">electronics.audio.headphone</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">apple</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" data-product-id="1004767" data-category="electronics.smartphone" data-brand="samsung" data-price="247.06">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="7" y="2.8" width="10" height="18.4" rx="2.4" stroke="#60a5fa" stroke-width="1.8"/>
+                            <path d="M10 18h4" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">Samsung A51</h2>
+                        <div class="price">$247.06</div>
+                    </div>
+                    <p class="category">electronics.smartphone</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">samsung</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" data-product-id="1307073" data-category="computers.notebook" data-brand="hp" data-price="450.45">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="5" y="4" width="14" height="10" rx="1.8" stroke="#fbbf24" stroke-width="1.8"/>
+                            <path d="M3.5 18h17" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M8 14l-1 4M16 14l1 4" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">HP Pavilion</h2>
+                        <div class="price">$450.45</div>
+                    </div>
+                    <p class="category">computers.notebook</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">hp</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" data-product-id="1002544" data-category="electronics.smartphone" data-brand="apple" data-price="460.51">
+                <div class="card-content">
+                    <div class="icon-box">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="7" y="2.8" width="10" height="18.4" rx="2.4" stroke="#c084fc" stroke-width="1.8"/>
+                            <path d="M10 18h4" stroke="#c084fc" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M13 5h-2" stroke="#c084fc" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="product-meta">
+                        <h2 class="product-name">iPhone 11</h2>
+                        <div class="price">$460.51</div>
+                    </div>
+                    <p class="category">electronics.smartphone</p>
+                    <div class="card-footer">
+                        <span class="brand-tag">apple</span>
+                        <span class="send-label">Send event</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer">
+            Events are emitted as REES46-compatible JSON and written to Amazon S3 for live dashboard monitoring.
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <div class="toast-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12.5l4 4L19 6.5" stroke="#34d399" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div>
+            <div class="toast-title">Event ingested successfully</div>
+            <div class="toast-subtitle">Written to S3 live-events prefix</div>
+        </div>
+    </div>
 
     <script>
-        // --- Configuration ---
-        const API_URL = "https://decade-progress-thievish.ngrok-free.dev/live-event"; 
-        
-        // Generate unique user ID for this browser session
-        const userId = 'demo_user_' + Math.random().toString(36).substr(2, 5);
+        const API_URL = "https://decade-progress-thievish.ngrok-free.dev/live-event";
+
+        const userId = "demo_user_" + Math.random().toString(36).substring(2, 7);
+        const sessionId = "demo_session_" + Math.random().toString(36).substring(2, 8);
         let eventCount = 0;
-        
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('click', async (e) => {
-                const event = {
-                    event_time: new Date().toISOString(),
-                    event_type: "view",
-                    product_id: card.dataset.productId,
-                    category_code: card.dataset.category,
-                    brand: card.dataset.brand,
-                    price: parseFloat(card.dataset.price),
-                    user_id: userId,
-                    session_id: "demo_sess_" + userId.split('_')[2],
-                    source: "github_pages_demo"
-                };
-                
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'ngrok-skip-browser-warning': 'true'
-                        },
-                        body: JSON.stringify(event)
-                    });
-                    
-                    if (response.ok) {
-                        eventCount++;
-                        document.getElementById('counter').textContent = eventCount;
-                        
-                        // Success Toast
-                        const toast = document.getElementById('toast');
-                        toast.style.display = 'block';
-                        setTimeout(() => { toast.style.display = 'none'; }, 2000);
-                    } else {
-                        console.error("API Error:", await response.text());
-                    }
-                } catch (err) {
-                    console.error("Connection Error:", err);
-                    alert("Could not connect to API! Make sure your FastAPI server is running on EC2.");
+
+        const toast = document.getElementById("toast");
+        const counter = document.getElementById("counter");
+
+        function showToast() {
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 2200);
+        }
+
+        async function sendEvent(card) {
+            const event = {
+                event_type: "view",
+                product_id: card.dataset.productId,
+                category_code: card.dataset.category,
+                brand: card.dataset.brand,
+                price: parseFloat(card.dataset.price),
+                user_id: userId,
+                session_id: sessionId
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true"
+                    },
+                    body: JSON.stringify(event)
+                });
+
+                if (response.ok) {
+                    eventCount += 1;
+                    counter.textContent = eventCount;
+                    showToast();
+                } else {
+                    const errorText = await response.text();
+                    console.error("API Error:", response.status, errorText);
+                    alert("API Error: " + response.status + ". Check browser console for details.");
                 }
-            });
+            } catch (err) {
+                console.error("Connection Error:", err);
+                alert("Could not connect to FastAPI. Confirm EC2 FastAPI and ngrok are running.");
+            }
+        }
+
+        document.querySelectorAll(".card").forEach((card) => {
+            card.addEventListener("click", () => sendEvent(card));
         });
     </script>
 </body>
