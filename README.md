@@ -157,16 +157,16 @@ s3://clickstream-analytics-akash/
 
 ---
 
-## Map of your .py files
+## Pipeline Scripts
 
 | Script | Purpose | Input | Output |
 |---|---|---|---|
-| `01_bronze.py` | Convert raw data to Bronze Parquet | Raw CSV + generated Criteo-schema data | `bronze/rees46/`, `bronze/criteo/` |
-| `02_iceberg.py` | Create Iceberg batch tables | Bronze Parquet | `batch/iceberg/` |
-| `03_delta.py` | Create Delta speed layer and trending products | Bronze REES46 Parquet | `speed/delta/events/`, `speed/delta/trending/` |
-| `04_hudi.py` | Build mutable user profiles | Bronze REES46 Parquet | `serving/hudi/user_profiles/` |
-| `05_ml.py` | Train ML models and save summary | Bronze + Hudi data | `ml-artifacts/ml_summary.json` |
-| `06_benchmark.py` | Benchmark table formats | Iceberg, Delta, Hudi | `benchmark/results.json` |
+| [`01_bronze.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/01_bronze.py) | Convert raw data to Bronze Parquet | Raw CSV + generated Criteo-schema data | `bronze/rees46/`, `bronze/criteo/` |
+| [`02_iceberg.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/02_iceberg.py) | Create Iceberg batch tables | Bronze Parquet | `batch/iceberg/` |
+| [`03_delta.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/03_delta.py) | Create Delta speed layer and trending products | Bronze REES46 Parquet | `speed/delta/events/`, `speed/delta/trending/` |
+| [`04_hudi.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/04_hudi.py) | Build mutable user profiles | Bronze REES46 Parquet | `serving/hudi/user_profiles/` |
+| [`05_ml.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/05_ml.py) | Train ML models and save summary | Bronze + Hudi data | `ml-artifacts/ml_summary.json` |
+| [`06_benchmark.py`](https://github.com/Akashkumarsenthil/ClickStream-analytics/blob/main/pipeline/06_benchmark.py) | Benchmark table formats | Iceberg, Delta, Hudi | `benchmark/results.json` |
 
 ---
 
