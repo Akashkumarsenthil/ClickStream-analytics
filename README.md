@@ -203,12 +203,12 @@ The project was implemented as six main Spark/Python pipeline stages.
 
 | Script | Purpose | Input | Output |
 |---|---|---|---|
-| `01_bronze.py` | Convert raw data to Bronze Parquet | Raw CSV / generated Criteo-schema data | `bronze/rees46/`, `bronze/criteo/` |
-| `02_iceberg.py` | Create Iceberg batch tables | Bronze Parquet | `batch/iceberg/` |
-| `03_delta.py` | Create Delta speed layer and trending products | Bronze REES46 Parquet | `speed/delta/events/`, `speed/delta/trending/` |
-| `04_hudi.py` | Build mutable user profiles | Bronze REES46 Parquet | `serving/hudi/user_profiles/` |
-| `05_ml.py` | Train ML models and save summary | Bronze + Hudi data | `ml-artifacts/ml_summary.json` |
-| `06_benchmark.py` | Benchmark table formats | Iceberg, Delta, Hudi | `benchmark/results.json` |
+| [`01_bronze.py`](pipeline/01_bronze.py) | Convert raw data to Bronze Parquet | Raw CSV / generated Criteo-schema data | `bronze/rees46/`, `bronze/criteo/` |
+| [`02_iceberg.py`](pipeline/02_iceberg.py) | Create Iceberg batch tables | Bronze Parquet | `batch/iceberg/` |
+| [`03_delta.py`](pipeline/03_delta.py) | Create Delta speed layer and trending products | Bronze REES46 Parquet | `speed/delta/events/`, `speed/delta/trending/` |
+| [`04_hudi.py`](pipeline/04_hudi.py) | Build mutable user profiles | Bronze REES46 Parquet | `serving/hudi/user_profiles/` |
+| [`05_ml.py`](pipeline/05_ml.py) | Train ML models and save summary | Bronze + Hudi data | `ml-artifacts/ml_summary.json` |
+| [`06_benchmark.py`](pipeline/06_benchmark.py) | Benchmark table formats | Iceberg, Delta, Hudi | `benchmark/results.json` |
 
 ---
 
@@ -559,54 +559,6 @@ LIMIT 20
 
 ---
 
-## 16. Demo Walkthrough
-
-Recommended demo sequence:
-
-1. Show S3 bucket structure:
-   - `raw-csv/`
-   - `bronze/`
-   - `batch/iceberg/`
-   - `speed/delta/`
-   - `serving/hudi/`
-   - `ml-artifacts/`
-   - `benchmark/`
-   - `live-events/`
-
-2. Show Streamlit dashboard:
-   - Live Analytics
-   - Lakehouse Layers
-   - Machine Learning
-   - Benchmarks
-   - Event Feed
-
-3. Show GitHub Pages clickstream demo:
-   - Click a product card.
-   - Confirm live event counter increases.
-
-4. Show S3 live event proof:
-   - New JSON file appears in `live-events/`.
-
-5. Show FastAPI docs:
-   - `/trending`
-   - `/recommend/{user_id}`
-   - `/predict/ctr`
-   - `/user/{user_id}/segment`
-   - `/similar/{product_id}`
-   - `/live-event`
-
-6. Run ad-hoc Spark SQL queries:
-   - Iceberg category analytics
-   - Delta trending products
-   - Hudi user profile query
-
-7. Show benchmark result:
-   - Delta Lake: 4.17s
-   - Iceberg: 5.01s
-   - Hudi: 6.52s
-
----
-
 ## 17. Notes and Limitations
 
 - The REES46 dataset was processed at large scale with 109.95M events from the available raw files.
@@ -614,18 +566,6 @@ Recommended demo sequence:
 - Benchmark results are workload-specific and depend on EC2 instance size, S3 latency, table layout, caching, and query type.
 - The GitHub Pages integration simulates a real e-commerce frontend by emitting REES46-compatible events through FastAPI into S3.
 - For security, public API and SSH access should be restricted after the demo. Any exposed AWS credentials should be rotated after project completion.
-
----
-
-## 18. Security Reminder
-
-Before final submission or public release:
-
-- Remove hardcoded AWS credentials from code and config files.
-- Rotate the IAM access key used during the project.
-- Restrict EC2 security group access.
-- Disable or close public `8000` and `8501` ports if no longer needed.
-- Avoid committing secrets, `.aws/`, logs containing credentials, or large generated artifacts.
 
 ---
 
