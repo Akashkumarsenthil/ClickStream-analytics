@@ -191,28 +191,22 @@ def get_live_clicks(limit=250):
 
 def check_api_health():
     try:
-        # Check health endpoint if it exists, else just root
-        r = requests.get(f"{API_BASE_URL}/health", timeout=3)
+        r = requests.get(
+            f"{API_BASE_URL}/",
+            timeout=5,
+            headers={"ngrok-skip-browser-warning": "true"}
+        )
         return r.status_code == 200
     except Exception:
-        try:
-            r = requests.get(f"{API_BASE_URL}/", timeout=3)
-            return r.status_code == 200
-        except:
-            return False
+        return False
 
 def metric_card(icon, label, value, detail=""):
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            {icon}
-            <div class="metric-label">{label}</div>
-            <div class="metric-value">{value}</div>
-            <div class="muted">{detail}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with st.container(border=True):
+        st.markdown(icon, unsafe_allow_html=True)
+        st.markdown(f"**{label}**")
+        st.markdown(f"### {value}")
+        if detail:
+            st.caption(detail)
 
 with st.sidebar:
     st.title("ClickStream")
@@ -355,17 +349,11 @@ with tab_live:
             st.plotly_chart(fig_funnel, use_container_width=True)
 
             top_category = df_live["category_code"].mode().iloc[0] if not df_live["category_code"].empty else "unknown"
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    {ICON_ACTIVITY}
-                    <div class="metric-label">Top live category</div>
-                    <div class="metric-value" style="font-size:1.05rem;">{top_category}</div>
-                    <span class="pill">LIVE</span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            with st.container(border=True):
+                st.markdown(ICON_ACTIVITY, unsafe_allow_html=True)
+                st.markdown("**Top live category**")
+                st.markdown(f"### {top_category}")
+                st.success("LIVE")
 
         b1, b2 = st.columns(2)
 
@@ -407,34 +395,25 @@ with tab_lakehouse:
     a, b, c = st.columns(3)
 
     with a:
-        st.markdown(f"""
-        <div class="metric-card">
-            {ICON_DATABASE}
-            <div class="metric-value" style="font-size:1.25rem;">Apache Iceberg</div>
-            <div class="muted">Batch analytics, metadata snapshots, historical SQL</div>
-            <br><span class="pill">COMPLETE</span>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(ICON_DATABASE, unsafe_allow_html=True)
+            st.markdown("### Apache Iceberg")
+            st.caption("Batch analytics, metadata snapshots, historical SQL")
+            st.success("COMPLETE")
 
     with b:
-        st.markdown(f"""
-        <div class="metric-card">
-            {ICON_ACTIVITY}
-            <div class="metric-value" style="font-size:1.25rem;">Delta Lake</div>
-            <div class="muted">Speed layer, transaction log, trending products</div>
-            <br><span class="pill">COMPLETE</span>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(ICON_ACTIVITY, unsafe_allow_html=True)
+            st.markdown("### Delta Lake")
+            st.caption("Speed layer, transaction log, trending products")
+            st.success("COMPLETE")
 
     with c:
-        st.markdown(f"""
-        <div class="metric-card">
-            {ICON_API}
-            <div class="metric-value" style="font-size:1.25rem;">Apache Hudi</div>
-            <div class="muted">Mutable user profiles and upsert-ready serving data</div>
-            <br><span class="pill">COMPLETE</span>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(ICON_API, unsafe_allow_html=True)
+            st.markdown("### Apache Hudi")
+            st.caption("Mutable user profiles and upsert-ready serving data")
+            st.success("COMPLETE")
 
     st.markdown("### Verified scale")
     scale_df = pd.DataFrame([
