@@ -1,9 +1,361 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Interactive demonstration of a 114.9M-record clickstream lakehouse."><title>Clickstream Lakehouse · Akash Kumar</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=1"></head><body>
-<header><a class="brand" href="#top"><b>cs.</b> Clickstream Lakehouse</a><nav><a href="#demo">Demo</a><a href="#architecture">Architecture</a><a href="#results">Results</a><a href="https://github.com/Akashkumarsenthil/ClickStream-analytics" target="_blank" rel="noreferrer">GitHub ↗</a></nav></header>
-<main id="top"><section class="hero wrap"><div><p class="eyebrow">DATA ENGINEERING · APPLIED ML</p><h1>From 114.9M events<br><em>to useful decisions.</em></h1><p class="lede">A production-style e-commerce lakehouse comparing three open table formats, training four ML workloads, and serving recommendations through FastAPI.</p><div class="actions"><a class="button primary" href="#demo">Explore the demo ↓</a><a class="button secondary" href="https://github.com/Akashkumarsenthil/ClickStream-analytics" target="_blank" rel="noreferrer">Read the code ↗</a></div><p class="safe"><i></i><b>Zero-cost showcase</b> · No AWS services or credentials are used</p></div><div class="pipeline"><div class="panel-title"><span>PIPELINE / 06 STAGES</span><span>AWS · SPARK</span></div><div class="stage"><b>01</b><span>Raw events<small>REES46 + Criteo</small></span></div><i></i><div class="stage"><b>02</b><span>Bronze<small>Parquet on S3</small></span></div><i></i><div class="formats"><span>ICEBERG<small>batch</small></span><span>DELTA<small>speed</small></span><span>HUDI<small>serving</small></span></div><i></i><div class="stage"><b>05</b><span>ML + API<small>MLflow · FastAPI</small></span></div><div class="panel-foot"><span>Verified artifact</span><b>114,950,743 records</b></div></div></section>
-<section class="metrics"><div><b>109.95M</b><span>REES46 events</span></div><div><b>5.0M</b><span>CTR rows</span></div><div><b>15.1M</b><span>User profiles</span></div><div><b>37,157</b><span>Embeddings</span></div><div><b>4</b><span>ML workloads</span></div></section>
-<section id="demo" class="section wrap"><div class="heading"><div><p class="eyebrow">01 / INTERACTIVE DEMO</p><h2>See the event contract in action.</h2></div><p>This uses the same product IDs and REES46-compatible schema as <code>/live-event</code>. Generated events stay only in this browser.</p></div><div class="demo"><div class="catalog card"><div class="card-title"><span>PRODUCT CATALOG</span><span id="session"></span></div><div id="products" class="products"></div></div><aside class="console"><div class="console-title"><span>EVENT STREAM</span><b>LOCAL ONLY</b></div><div class="stats"><div><b id="count">0</b><span>events</span></div><div><b id="unique">0</b><span>products</span></div><div><b id="value">$0</b><span>value</span></div></div><div id="empty" class="empty">Select a product to generate a view event.</div><pre id="payload" hidden></pre><div id="feed"></div><button id="clear">Clear session</button></aside></div></section>
-<section id="architecture" class="dark section"><div class="wrap"><div class="heading"><div><p class="eyebrow">02 / SYSTEM DESIGN</p><h2>One dataset. Three table formats.</h2></div><p>Each format has a distinct role in the original implementation.</p></div><div class="layers"><article><span>01</span><b>B</b><h3>Bronze / Parquet</h3><p>Partitioned, columnar REES46 and Criteo-style data.</p><strong>114,950,743 records</strong></article><article><span>02</span><b>I</b><h3>Apache Iceberg</h3><p>Historical batch analytics and metadata snapshots.</p><strong>Batch layer</strong></article><article><span>03</span><b>Δ</b><h3>Delta Lake</h3><p>Event speed layer and trending-product outputs.</p><strong>Speed layer</strong></article><article><span>04</span><b>H</b><h3>Apache Hudi</h3><p>Mutable, upsert-ready customer profiles.</p><strong>15,095,144 profiles</strong></article></div></div></section>
-<section id="results" class="section wrap"><div class="heading"><div><p class="eyebrow">03 / MEASURED OUTPUTS</p><h2>Results, with caveats intact.</h2></div><p>Values are taken from committed artifacts. Benchmark rankings apply only to this single-node EC2/S3 workload.</p></div><div class="results"><div class="card"><div class="card-title"><span>TABLE FORMAT BENCHMARK</span><span>3-RUN AVG</span></div><div id="bench"></div><p class="note">Hudi profiles and event formats used different representative queries; this is not a universal table-format ranking.</p></div><div class="card"><div class="card-title"><span>ML INVENTORY</span><span>SPARK ML</span></div><div class="models"><div><span>CTR prediction</span><b>0.5010<small>AUC-ROC</small></b></div><div><span>ALS recommender</span><b>Implicit<small>feedback</small></b></div><div><span>Product2Vec</span><b>37,157<small>embeddings</small></b></div><div><span>K-Means</span><b>5<small>clusters</small></b></div></div><p class="note">The near-random CTR score is reported honestly and identifies categorical-feature engineering as future work.</p></div></div></section>
-<section class="api section"><div class="wrap api-grid"><div><p class="eyebrow">04 / SERVING CONTRACT</p><h2>Seven tested endpoints.</h2><p>The original FastAPI layer covers health, trending, recommendation, CTR, segmentation, similarity, and ingestion. It is displayed here without running cloud infrastructure.</p></div><div id="endpoints"></div></div></section></main>
-<footer><div class="wrap"><span>Built by Akash Kumar</span><span>DATA 228 · Spring 2026</span><a href="https://akashkumarsenthil.github.io/portfolio/">Back to portfolio ↗</a></div></footer><script src="app.js?v=1"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Interactive demonstration of a 114.9M-record clickstream lakehouse."
+    />
+    <title>Clickstream Lakehouse · Akash Kumar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=1" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="#top"><b>cs.</b> Clickstream Lakehouse</a>
+      <nav>
+        <a href="#demo">Demo</a><a href="#architecture">Architecture</a
+        ><a href="#results">Results</a
+        ><a
+          href="https://github.com/Akashkumarsenthil/ClickStream-analytics"
+          target="_blank"
+          rel="noreferrer"
+          >GitHub ↗</a
+        >
+      </nav>
+    </header>
+    <main id="top">
+      <section class="hero wrap">
+        <div>
+          <p class="eyebrow">DATA ENGINEERING · APPLIED ML</p>
+          <h1>From 114.9M events<br /><em>to useful decisions.</em></h1>
+          <p class="lede">
+            A production-style e-commerce lakehouse comparing three open table
+            formats, training four ML workloads, and serving recommendations
+            through FastAPI.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="#demo">Explore the demo ↓</a
+            ><a
+              class="button secondary"
+              href="https://github.com/Akashkumarsenthil/ClickStream-analytics"
+              target="_blank"
+              rel="noreferrer"
+              >Read the code ↗</a
+            >
+          </div>
+          <p class="safe">
+            <i></i><b>Zero-cost showcase</b> · No AWS services or credentials
+            are used
+          </p>
+        </div>
+        <div class="pipeline">
+          <div class="panel-title">
+            <span>PIPELINE / 06 STAGES</span><span>AWS · SPARK</span>
+          </div>
+          <div class="stage">
+            <b>01</b><span>Raw events<small>REES46 + Criteo</small></span>
+          </div>
+          <i></i>
+          <div class="stage">
+            <b>02</b><span>Bronze<small>Parquet on S3</small></span>
+          </div>
+          <i></i>
+          <div class="formats">
+            <span>ICEBERG<small>batch</small></span
+            ><span>DELTA<small>speed</small></span
+            ><span>HUDI<small>serving</small></span>
+          </div>
+          <i></i>
+          <div class="stage">
+            <b>05</b><span>ML + API<small>MLflow · FastAPI</small></span>
+          </div>
+          <div class="panel-foot">
+            <span>Verified artifact</span><b>114,950,743 records</b>
+          </div>
+        </div>
+      </section>
+      <section class="metrics">
+        <div><b>109.95M</b><span>REES46 events</span></div>
+        <div><b>5.0M</b><span>CTR rows</span></div>
+        <div><b>15.1M</b><span>User profiles</span></div>
+        <div><b>37,157</b><span>Embeddings</span></div>
+        <div><b>4</b><span>ML workloads</span></div>
+      </section>
+      <section id="demo" class="section wrap">
+        <div class="heading">
+          <div>
+            <p class="eyebrow">01 / INTERACTIVE DEMO</p>
+            <h2>See the event contract in action.</h2>
+          </div>
+          <p>
+            This uses the same product IDs and REES46-compatible schema as
+            <code>/live-event</code>. Generated events stay only in this
+            browser.
+          </p>
+        </div>
+        <div class="demo">
+          <div class="catalog card">
+            <div class="card-title">
+              <span>PRODUCT CATALOG</span><span id="session"></span>
+            </div>
+            <div id="products" class="products"></div>
+          </div>
+          <aside class="console">
+            <div class="console-title">
+              <span>EVENT STREAM</span><b>LOCAL ONLY</b>
+            </div>
+            <div class="stats">
+              <div><b id="count">0</b><span>events</span></div>
+              <div><b id="unique">0</b><span>products</span></div>
+              <div><b id="value">$0</b><span>value</span></div>
+            </div>
+            <div id="empty" class="empty">
+              Select a product to generate a view event.
+            </div>
+            <pre id="payload" hidden></pre>
+            <div id="feed"></div>
+            <button id="clear">Clear session</button>
+          </aside>
+        </div>
+      </section>
+      <section id="architecture" class="dark section">
+        <div class="wrap">
+          <div class="heading">
+            <div>
+              <p class="eyebrow">02 / SYSTEM DESIGN</p>
+              <h2>One lakehouse. Three specialized paths.</h2>
+            </div>
+            <p>
+              These diagrams follow the actual Spark jobs, storage paths,
+              transformations, and consumers implemented in the repository.
+            </p>
+          </div>
+          <div class="overview-diagram">
+            <div class="diagram-node">
+              <span>SOURCES</span><b>REES46 + Criteo</b
+              ><small>109.95M events · 5M CTR rows</small>
+            </div>
+            <i>→</i>
+            <div class="diagram-node bronze-node">
+              <span>BRONZE</span><b>Parquet on S3</b
+              ><small>Cleaned · typed · partitioned</small>
+            </div>
+            <i>→</i>
+            <div class="diagram-fan">
+              <div><b>ICEBERG</b><small>Batch history</small></div>
+              <div><b>DELTA</b><small>Speed analytics</small></div>
+              <div><b>HUDI</b><small>Mutable profiles</small></div>
+            </div>
+            <i>→</i>
+            <div class="diagram-node consumer-node">
+              <span>CONSUMERS</span><b>Spark ML + MLflow</b
+              ><small>FastAPI · Streamlit</small>
+            </div>
+          </div>
+          <div class="architecture-tabs" role="tablist">
+            <button
+              class="arch-tab active"
+              data-arch="iceberg"
+              role="tab"
+              aria-selected="true"
+            >
+              Iceberg · Batch</button
+            ><button
+              class="arch-tab"
+              data-arch="delta"
+              role="tab"
+              aria-selected="false"
+            >
+              Delta · Speed</button
+            ><button
+              class="arch-tab"
+              data-arch="hudi"
+              role="tab"
+              aria-selected="false"
+            >
+              Hudi · Serving
+            </button>
+          </div>
+          <div class="arch-panels">
+            <article class="arch-panel" data-panel="iceberg">
+              <div class="arch-copy">
+                <span>PIPELINE / 02_ICEBERG.PY</span>
+                <h3>Historical tables with catalog metadata</h3>
+                <p>
+                  Spark reads both Bronze datasets and creates two Iceberg
+                  tables through a Hadoop catalog, then runs historical SQL
+                  aggregations.
+                </p>
+                <ul>
+                  <li>Snappy-compressed Parquet data files</li>
+                  <li>REES46 events and Criteo clicks tables</li>
+                  <li>Batch analytics and schema evolution</li>
+                </ul>
+              </div>
+              <div class="mini-diagram">
+                <div>
+                  <small>READ</small><b>Bronze Parquet</b
+                  ><code>rees46/ + criteo/</code>
+                </div>
+                <i>→</i>
+                <div class="ice">
+                  <small>WRITE TO</small><b>Iceberg catalog</b
+                  ><code>local.clickstream.*</code>
+                </div>
+                <i>→</i>
+                <div>
+                  <small>QUERY</small><b>Spark SQL</b
+                  ><code>category + event type</code>
+                </div>
+                <p>Output: <code>batch/iceberg/</code></p>
+              </div>
+            </article>
+            <article class="arch-panel" data-panel="delta" hidden>
+              <div class="arch-copy">
+                <span>PIPELINE / 03_DELTA.PY</span>
+                <h3>Speed-layer analytical outputs</h3>
+                <p>
+                  Spark partitions the full event table by event type and
+                  derives query-ready Delta outputs for demand and hourly
+                  activity.
+                </p>
+                <ul>
+                  <li>Events partitioned by view, cart, and purchase</li>
+                  <li>Trending products, price, and unique viewers</li>
+                  <li>Hourly volume by event type</li>
+                </ul>
+              </div>
+              <div class="mini-diagram">
+                <div>
+                  <small>READ</small><b>REES46 Bronze</b
+                  ><code>109.95M events</code>
+                </div>
+                <i>→</i>
+                <div class="delta">
+                  <small>DELTA EVENTS</small><b>Partition by type</b
+                  ><code>speed/delta/events/</code>
+                </div>
+                <i>→</i>
+                <div class="outputs">
+                  <span><b>Trending</b><code>view_count</code></span
+                  ><span><b>Hourly</b><code>event volume</code></span>
+                </div>
+                <p>Outputs: <code>speed/delta/</code></p>
+              </div>
+            </article>
+            <article class="arch-panel" data-panel="hudi" hidden>
+              <div class="arch-copy">
+                <span>PIPELINE / 04_HUDI.PY</span>
+                <h3>Upsert-ready customer profiles</h3>
+                <p>
+                  Spark groups events by user, builds behavioral features, and
+                  writes a Merge-on-Read Hudi table keyed by user ID.
+                </p>
+                <ul>
+                  <li>Views, carts, purchases, spend, and recency</li>
+                  <li>Cart rate, purchase rate, and segment label</li>
+                  <li>Latest event used as the precombine field</li>
+                </ul>
+              </div>
+              <div class="mini-diagram">
+                <div>
+                  <small>GROUP BY</small><b>user_id</b
+                  ><code>event history</code>
+                </div>
+                <i>→</i>
+                <div class="hudi">
+                  <small>FEATURES</small><b>Profile aggregate</b
+                  ><code>rates + segments</code>
+                </div>
+                <i>→</i>
+                <div>
+                  <small>UPSERT</small><b>Hudi MOR</b
+                  ><code>15.1M profiles</code>
+                </div>
+                <p>Output: <code>serving/hudi/user_profiles/</code></p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section id="results" class="section wrap">
+        <div class="heading">
+          <div>
+            <p class="eyebrow">03 / MEASURED OUTPUTS</p>
+            <h2>Results, with caveats intact.</h2>
+          </div>
+          <p>
+            Values are taken from committed artifacts. Benchmark rankings apply
+            only to this single-node EC2/S3 workload.
+          </p>
+        </div>
+        <div class="results">
+          <div class="card">
+            <div class="card-title">
+              <span>TABLE FORMAT BENCHMARK</span><span>3-RUN AVG</span>
+            </div>
+            <div id="bench"></div>
+            <p class="note">
+              Hudi profiles and event formats used different representative
+              queries; this is not a universal table-format ranking.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              <span>ML INVENTORY</span><span>SPARK ML</span>
+            </div>
+            <div class="models">
+              <div>
+                <span>CTR prediction</span><b>0.5010<small>AUC-ROC</small></b>
+              </div>
+              <div>
+                <span>ALS recommender</span
+                ><b>Implicit<small>feedback</small></b>
+              </div>
+              <div>
+                <span>Product2Vec</span><b>37,157<small>embeddings</small></b>
+              </div>
+              <div>
+                <span>K-Means</span><b>5<small>clusters</small></b>
+              </div>
+            </div>
+            <p class="note">
+              The near-random CTR score is reported honestly and identifies
+              categorical-feature engineering as future work.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="api section">
+        <div class="wrap api-grid">
+          <div>
+            <p class="eyebrow">04 / SERVING CONTRACT</p>
+            <h2>Seven tested endpoints.</h2>
+            <p>
+              The original FastAPI layer covers health, trending,
+              recommendation, CTR, segmentation, similarity, and ingestion. It
+              is displayed here without running cloud infrastructure.
+            </p>
+          </div>
+          <div id="endpoints"></div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <div class="wrap">
+        <span>Built by Akash Kumar</span><span>DATA 228 · Spring 2026</span
+        ><a href="https://akashkumarsenthil.github.io/portfolio/"
+          >Back to portfolio ↗</a
+        >
+      </div>
+    </footer>
+    <script src="app.js?v=1"></script>
+  </body>
+</html>
